@@ -1,0 +1,48 @@
+name: Update meal and deploy Pages
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '30 20 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Fetch today's lunch
+        id: meal
+        continue-on-error: true
+        env:
+          NEIS_API_KEY: ${{ secrets.NEIS_API_KEY }}
+        run: python scripts/fetch_meal.py
+      - name: Prepare public files
+        run: |
+          mkdir -p _site
+          cp index.html favicon.svg _site/
+          cp -r css js data _site/
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Report meal update failure
+        if: steps.meal.outcome == 'failure'
+        run: |
+          echo '::error::Meal update failed. Pages was deployed with an honest error state. Check NEIS availability and the optional NEIS_API_KEY secret.'
+          exit 1

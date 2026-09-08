@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#e9e9e9">
+  <meta name="description" content="전주초등학교 온라인 교무실 — 오늘의 일정, 학교 기초자료, 공유 드라이브와 오늘의 식단을 한곳에서.">
+  <title>온라인 교무실</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/config.js" defer></script>
+  <script src="js/app.js" defer></script>
+</head>
+<body>
+  <main>
+    <header class="hero">
+      <h1>온라인 교무실</h1>
+      <form class="search" action="https://www.google.com/search" method="get" target="_blank" rel="noopener noreferrer" role="search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/></svg>
+        <label class="sr-only" for="query">Google에서 검색하기</label>
+        <input id="query" name="q" type="search" placeholder="Google에서 검색하기" autocomplete="on" required>
+        <button type="submit" aria-label="Google 검색 (새 탭)"><span aria-hidden="true">↵</span></button>
+      </form>
+    </header>
+    <section class="cards" aria-label="학교 업무 바로가기와 오늘의 식단">
+      <a class="card link-card" id="schedule" href="https://docs.google.com/spreadsheets/d/1S9G-9O20as8rz_Sob7lVXcKczfeWxuiYNlxr-MALDlk/edit?usp=drive_link" target="_blank" rel="noopener noreferrer" aria-label="오늘의 일정 (새 탭)">
+        <span class="index" aria-hidden="true">01 / SCHEDULE</span>
+        <h2>오늘의 일정</h2>
+        <div class="card-bottom"><p>월중계획을 확인합니다.</p><span class="arrow" aria-hidden="true">↗</span></div>
+      </a>
+      <a class="card link-card" id="school-data" href="https://docs.google.com/spreadsheets/d/1C-bhOsLn_u3k9JDVQ3D7w9lEkEW2xbzUGJxRSLqf250/edit?usp=drive_link" target="_blank" rel="noopener noreferrer" aria-label="우리학교 기초자료 (새 탭)">
+        <span class="index" aria-hidden="true">02 / RESOURCES</span>
+        <h2>우리학교 기초자료</h2>
+        <div class="card-bottom"><p>학교 기초자료를 확인합니다.</p><span class="arrow" aria-hidden="true">↗</span></div>
+      </a>
+      <a class="card link-card" id="drive" href="https://drive.google.com/drive/folders/0AMq81Hlj4oJlUk9PVA" target="_blank" rel="noopener noreferrer" aria-label="우리학교 공유 드라이브 (새 탭)">
+        <span class="index" aria-hidden="true">03 / SHARED DRIVE</span>
+        <h2>우리학교<br>공유 드라이브</h2>
+        <div class="card-bottom"><p>공유 자료를 확인합니다.</p><span class="arrow" aria-hidden="true">↗</span></div>
+      </a>
+      <article class="card meal-card" aria-labelledby="meal-title">
+        <span class="index" aria-hidden="true">04 / TODAY’S LUNCH</span>
+        <div class="meal-heading"><h2 id="meal-title">오늘의 식단</h2><time id="meal-date"></time></div>
+        <div id="meal-content" role="status" aria-live="polite"><p class="meal-message">식단 정보를 불러오는 중입니다.</p></div>
+        <noscript><p>식단을 보려면 JavaScript를 켜 주세요.</p></noscript>
+      </article>
+    </section>
+  </main>
+  <footer>© 2026 Jaeyun</footer>
+</body>
+</html>
