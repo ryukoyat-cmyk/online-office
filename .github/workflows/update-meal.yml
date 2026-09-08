@@ -1,4 +1,4 @@
-name: Update meal and deploy Pages
+name: Update meal, weather and deploy Pages
 on:
   push:
     branches: [main]
@@ -29,6 +29,10 @@ jobs:
         env:
           NEIS_API_KEY: ${{ secrets.NEIS_API_KEY }}
         run: python scripts/fetch_meal.py
+      - name: Fetch today's weather
+        id: weather
+        continue-on-error: true
+        run: python scripts/fetch_weather.py
       - name: Prepare public files
         run: |
           mkdir -p _site
@@ -45,4 +49,9 @@ jobs:
         if: steps.meal.outcome == 'failure'
         run: |
           echo '::error::Meal update failed. Pages was deployed with an honest error state. Check NEIS availability and the optional NEIS_API_KEY secret.'
+          exit 1
+      - name: Report weather update failure
+        if: steps.weather.outcome == 'failure'
+        run: |
+          echo '::error::Weather update failed. Pages was deployed with an honest error state. Check Open-Meteo availability.'
           exit 1
