@@ -2,10 +2,12 @@
 for (const [id, key] of [['schedule','scheduleUrl'],['school-data','schoolDataUrl'],['drive','sharedDriveUrl']]) {
   document.getElementById(id).href = CONFIG[key];
 }
-document.querySelector('.search').addEventListener('submit', event => {
-  const input = document.getElementById('query');
-  input.value = input.value.trim();
-  if (!input.value) { event.preventDefault(); input.focus(); }
+document.querySelectorAll('.search').forEach(form => {
+  form.addEventListener('submit', event => {
+    const input = form.querySelector('input[type="search"]');
+    input.value = input.value.trim();
+    if (!input.value) { event.preventDefault(); input.focus(); }
+  });
 });
 function koreaDate(now = new Date()) {
   const parts = new Intl.DateTimeFormat('en-CA', { timeZone:'Asia/Seoul', year:'numeric',month:'2-digit',day:'2-digit' }).formatToParts(now);
