@@ -10,6 +10,7 @@ import sys
 import time
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
+from urllib.parse import quote
 from urllib.request import Request, urlopen
 
 from google.auth.transport.requests import Request as AuthRequest
@@ -31,7 +32,7 @@ def get_access_token():
 
 
 def fetch_rows(token):
-    url = f'https://sheets.googleapis.com/v4/spreadsheets/{SPREADSHEET_ID}/values/{SHEET_RANGE}'
+    url = f'https://sheets.googleapis.com/v4/spreadsheets/{SPREADSHEET_ID}/values/{quote(SHEET_RANGE, safe="")}'
     request = Request(url, headers={'Authorization': f'Bearer {token}'})
     with urlopen(request, timeout=20) as response:
         data = json.load(response)
@@ -68,7 +69,8 @@ def main():
             payload['events'] = upcoming[:3] if upcoming else events[-1:]
             payload['status'] = 'ok'
             break
-        except Exception:
+        except Exception as exc:
+            print(f'D-day fetch attempt {attempt + 1} failed: {exc!r}', file=sys.stderr)
             if attempt < 2:
                 time.sleep(2 ** attempt)
     path = ROOT / 'data' / 'dday.json'
