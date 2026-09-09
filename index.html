@@ -33,10 +33,17 @@
       </div>
     </header>
     <section class="cards" aria-label="오늘의 날씨·식단·일정과 학교 업무 바로가기">
-      <article class="card weather-card" aria-labelledby="weather-title">
-        <span class="index" aria-hidden="true">01 / TODAY’S WEATHER</span>
-        <div class="meal-heading"><h2 id="weather-title">오늘의 날씨</h2><time id="weather-date"></time></div>
-        <div id="weather-content" role="status" aria-live="polite"><p class="meal-message">날씨 정보를 불러오는 중입니다.</p></div>
+      <article class="card weather-card" id="weatherCard" aria-labelledby="weather-title">
+        <div class="weather-scene" aria-hidden="true">
+          <svg class="weather-mountain" id="weatherMountain" viewBox="0 0 240 100" preserveAspectRatio="none"><path d="M0 100 L38 52 L70 76 L108 30 L145 72 L182 44 L240 100 Z"/></svg>
+        </div>
+        <div class="weather-inner">
+          <span class="index" aria-hidden="true">01 / TODAY’S WEATHER</span>
+          <h2 id="weather-title">오늘의 날씨</h2>
+          <div id="weather-content" role="status" aria-live="polite">
+            <p class="meal-message">날씨 정보를 불러오는 중입니다.</p>
+          </div>
+        </div>
         <noscript><p>날씨를 보려면 JavaScript를 켜 주세요.</p></noscript>
       </article>
       <article class="card meal-card" aria-labelledby="meal-title">
@@ -50,7 +57,7 @@
         <h2>오늘의 일정</h2>
         <div class="card-foot">
           <div class="card-icon-wrap"><img class="card-icon" src="assets/schedule-icon.png" alt="오늘의 일정" width="64" height="64" loading="lazy" onerror="this.closest('.card-icon-wrap').style.display='none'"></div>
-          <div class="card-bottom"><p>월중계획을 확인합니다.</p><svg class="link-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14 20 4"/><path d="M14 4h6v6"/><path d="M17 13v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h6"/></svg></div>
+          <div class="card-bottom"><svg class="link-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14 20 4"/><path d="M14 4h6v6"/><path d="M17 13v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h6"/></svg></div>
         </div>
       </a>
       <a class="card link-card" id="school-data" href="https://docs.google.com/spreadsheets/d/1C-bhOsLn_u3k9JDVQ3D7w9lEkEW2xbzUGJxRSLqf250/edit?usp=drive_link" target="_blank" rel="noopener noreferrer" aria-label="우리학교 기초자료 (새 탭)">
@@ -58,7 +65,7 @@
         <h2>우리학교 기초자료</h2>
         <div class="card-foot">
           <div class="card-icon-wrap"><img class="card-icon" src="assets/resources-icon.png" alt="우리학교 기초자료" width="64" height="64" loading="lazy" onerror="this.closest('.card-icon-wrap').style.display='none'"></div>
-          <div class="card-bottom"><p>학교 기초자료를 확인합니다.</p><span class="arrow" aria-hidden="true">↗</span></div>
+          <div class="card-bottom"><svg class="link-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14 20 4"/><path d="M14 4h6v6"/><path d="M17 13v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h6"/></svg></div>
         </div>
       </a>
       <a class="card link-card" id="drive" href="https://drive.google.com/drive/folders/0AMq81Hlj4oJlUk9PVA" target="_blank" rel="noopener noreferrer" aria-label="우리학교 공유 드라이브 (새 탭)">
@@ -66,7 +73,7 @@
         <h2>우리학교<br>공유 드라이브</h2>
         <div class="card-foot">
           <div class="card-icon-wrap"><img class="card-icon" src="assets/shared-drive-icon.png" alt="우리학교 공유 드라이브" width="64" height="64" loading="lazy" onerror="this.closest('.card-icon-wrap').style.display='none'"></div>
-          <div class="card-bottom"><p>공유 자료를 확인합니다.</p><span class="arrow" aria-hidden="true">↗</span></div>
+          <div class="card-bottom"><svg class="link-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14 20 4"/><path d="M14 4h6v6"/><path d="M17 13v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h6"/></svg></div>
         </div>
       </a>
     </section>
