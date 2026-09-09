@@ -9,13 +9,6 @@ document.querySelectorAll('.search').forEach(form => {
     if (!input.value) { event.preventDefault(); input.focus(); }
   });
 });
-function tickHeroClock() {
-  const el = document.getElementById('heroClock');
-  if (!el) return;
-  el.textContent = new Intl.DateTimeFormat('ko-KR', {timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date());
-}
-tickHeroClock();
-setInterval(tickHeroClock, 30000);
 function koreaDate(now = new Date()) {
   const parts = new Intl.DateTimeFormat('en-CA', { timeZone:'Asia/Seoul', year:'numeric',month:'2-digit',day:'2-digit' }).formatToParts(now);
   return ['year','month','day'].map(type => parts.find(p => p.type === type).value).join('');
