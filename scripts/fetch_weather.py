@@ -5,11 +5,15 @@ import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import urlencode
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
 
 ROOT = Path(__file__).resolve().parents[1]
 KST = timezone(timedelta(hours=9))
-LATITUDE, LONGITUDE = 35.8242, 127.1480
+
+ADDRESS = '전북특별시 전주시 완산구 대동로 33'
+LOCATION_LABEL = '전주시 완산구'
+# Fallback center of Jeonju, used if the address lookup below fails for any reason.
+FALLBACK_LATITUDE, FALLBACK_LONGITUDE = 35.8242, 127.1480
 
 # WMO weather codes -> (Korean label, icon category)
 WEATHER_CODES = {
@@ -30,6 +34,20 @@ WEATHER_CODES = {
 }
 
 
+def geocode_address(address):
+    """Resolve a street address to (lat, lon) via Nominatim. Returns None on failure."""
+    params = {'q': address, 'format': 'json', 'limit': 1, 'countrycodes': 'kr'}
+    request = Request(
+        'https://nominatim.openstreetmap.org/search?' + urlencode(params),
+        headers={'User-Agent': 'jeonju-elementary-online-office/1.0 (school portal weather widget)'},
+    )
+    with urlopen(request, timeout=15) as response:
+        results = json.load(response)
+    if not results:
+        return None
+    return float(results[0]['lat']), float(results[0]['lon'])
+
+
 def parse_response(data):
     current = data['current']
     daily = data['daily']
@@ -40,19 +58,27 @@ def parse_response(data):
         'tempMin': round(daily['temperature_2m_min'][0]),
         'description': label,
         'icon': icon,
+        'isDay': bool(current['is_day']),
     }
 
 
 def main():
     now = datetime.now(KST)
     date = now.strftime('%Y%m%d')
+
+    try:
+        coords = geocode_address(ADDRESS)
+    except Exception:
+        coords = None
+    latitude, longitude = coords if coords else (FALLBACK_LATITUDE, FALLBACK_LONGITUDE)
+
     params = {
-        'latitude': LATITUDE, 'longitude': LONGITUDE,
-        'current': 'temperature_2m,weather_code',
+        'latitude': latitude, 'longitude': longitude,
+        'current': 'temperature_2m,weather_code,is_day',
         'daily': 'temperature_2m_max,temperature_2m_min',
         'timezone': 'Asia/Seoul',
     }
-    payload = {'location': '전주', 'date': date, 'updatedAt': now.isoformat(), 'status': 'error'}
+    payload = {'location': LOCATION_LABEL, 'date': date, 'updatedAt': now.isoformat(), 'status': 'error'}
     for attempt in range(3):
         try:
             with urlopen('https://api.open-meteo.com/v1/forecast?' + urlencode(params), timeout=25) as response:

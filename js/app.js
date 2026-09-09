@@ -2,10 +2,12 @@
 for (const [id, key] of [['schedule','scheduleUrl'],['school-data','schoolDataUrl'],['drive','sharedDriveUrl']]) {
   document.getElementById(id).href = CONFIG[key];
 }
-document.querySelector('.search').addEventListener('submit', event => {
-  const input = document.getElementById('query');
-  input.value = input.value.trim();
-  if (!input.value) { event.preventDefault(); input.focus(); }
+document.querySelectorAll('.search').forEach(form => {
+  form.addEventListener('submit', event => {
+    const input = form.querySelector('input[type="search"]');
+    input.value = input.value.trim();
+    if (!input.value) { event.preventDefault(); input.focus(); }
+  });
 });
 function koreaDate(now = new Date()) {
   const parts = new Intl.DateTimeFormat('en-CA', { timeZone:'Asia/Seoul', year:'numeric',month:'2-digit',day:'2-digit' }).formatToParts(now);
@@ -38,33 +40,55 @@ loadMeal();
 setInterval(() => { if (koreaDate() !== renderedDate) loadMeal(); }, 60000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) loadMeal(); });
 
-const WEATHER_ICONS = {
-  clear: '<circle cx="12" cy="12" r="4.5"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
-  cloudy: '<path d="M7 18h10.5a3.5 3.5 0 0 0 .5-6.96 5 5 0 0 0-9.71-1.53A4 4 0 0 0 7 18Z"/>',
-  fog: '<path d="M6.5 12h11a3.5 3.5 0 0 0 .5-6.96 5 5 0 0 0-9.71-1.53A4 4 0 0 0 6.5 12Z"/><path d="M4 16h16M4 20h16"/>',
-  rain: '<path d="M7 13h10.5a3.5 3.5 0 0 0 .5-6.96 5 5 0 0 0-9.71-1.53A4 4 0 0 0 7 13Z"/><path d="M8 17.5v2M12 17.5v2M16 17.5v2"/>',
-  snow: '<path d="M7 13h10.5a3.5 3.5 0 0 0 .5-6.96 5 5 0 0 0-9.71-1.53A4 4 0 0 0 7 13Z"/><path d="M12 16.5v6M9 18l6 3M15 18l-6 3"/>',
-  storm: '<path d="M7 12h10.5a3.5 3.5 0 0 0 .5-6.96 5 5 0 0 0-9.71-1.53A4 4 0 0 0 7 12Z"/><path d="m13 13-3 5h3l-2 4"/>',
+const WEATHER_SCENES = {
+  sun:    { grad: ['#8fd8ef', '#f6b352'], mtn: '#e08a3c',
+            icon: '<circle class="core" cx="12" cy="12" r="7" fill="#fff"/>' },
+  moon:   { grad: ['#232a52', '#12142a'], mtn: '#181b33',
+            icon: '<circle class="moon" cx="12" cy="12" r="7" fill="#e2e6ee"/>' },
+  cloudy: { grad: ['#bfe7de', '#e8ab6e'], mtn: '#cf8a4c',
+            icon: '<path class="cloud" fill="#fff" d="M7 17h10.5a3.5 3.5 0 0 0 .5-6.96 5 5 0 0 0-9.71-1.53A4 4 0 0 0 7 17Z"/>' },
+  fog:    { grad: ['#cfd9df', '#9fb0bd'], mtn: '#84939f',
+            icon: '<path class="cloud" fill="#fff" d="M6.5 12h11a3.5 3.5 0 0 0 .5-6.96 5 5 0 0 0-9.71-1.53A4 4 0 0 0 6.5 12Z"/><rect class="mist" x="4" y="15" width="16" height="1.6" rx=".8" fill="#fff"/><rect class="mist" x="4" y="19" width="16" height="1.6" rx=".8" fill="#fff"/>' },
+  rain:   { grad: ['#3fa9a0', '#1f6f6a'], mtn: '#1b5854',
+            icon: '<path class="cloud" fill="#fff" d="M7 13h10.5a3.5 3.5 0 0 0 .5-6.96 5 5 0 0 0-9.71-1.53A4 4 0 0 0 7 13Z"/><line class="drop" x1="8" y1="17" x2="6.5" y2="21" stroke="#bfe3ff" stroke-width="1.6" stroke-linecap="round"/><line class="drop" x1="12" y1="17" x2="10.5" y2="21" stroke="#bfe3ff" stroke-width="1.6" stroke-linecap="round"/><line class="drop" x1="16" y1="17" x2="14.5" y2="21" stroke="#bfe3ff" stroke-width="1.6" stroke-linecap="round"/>' },
+  snow:   { grad: ['#eaf6ff', '#c3ddf0'], mtn: '#9db7c8',
+            icon: '<path class="cloud" fill="#fff" d="M7 13h10.5a3.5 3.5 0 0 0 .5-6.96 5 5 0 0 0-9.71-1.53A4 4 0 0 0 7 13Z"/><circle class="flake" cx="8" cy="19" r="1" fill="#fff"/><circle class="flake" cx="12" cy="19" r="1" fill="#fff"/><circle class="flake" cx="16" cy="19" r="1" fill="#fff"/>' },
+  storm:  { grad: ['#3a3a58', '#17182c'], mtn: '#131426',
+            icon: '<path class="cloud" fill="#e7e9ee" d="M7 12h10.5a3.5 3.5 0 0 0 .5-6.96 5 5 0 0 0-9.71-1.53A4 4 0 0 0 7 12Z"/><path class="bolt" fill="#ffd766" d="m13 13-3 5h3l-2 4"/>' },
 };
+function weatherSceneKey(icon, isDay) {
+  if (icon === 'clear') return isDay ? 'sun' : 'moon';
+  return WEATHER_SCENES[icon] ? icon : 'cloudy';
+}
+function tickWeatherClock() {
+  const el = document.getElementById('weatherClock');
+  if (!el) return;
+  el.textContent = new Intl.DateTimeFormat('ko-KR', {timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date());
+}
 async function loadWeather() {
   const container = document.getElementById('weather-content');
-  const dateEl = document.getElementById('weather-date');
-  const now = new Date();
-  dateEl.textContent = new Intl.DateTimeFormat('ko-KR', {timeZone:'Asia/Seoul',month:'long',day:'numeric',weekday:'long'}).format(now);
-  const message = text => { const p=document.createElement('p');p.className='meal-message';p.textContent=text;container.replaceChildren(p); };
+  const message = text => { const p=document.createElement('p');p.className='weather-message';p.textContent=text;container.replaceChildren(p); };
   try {
     const response = await fetch(`${CONFIG.weatherUrl}?t=${Date.now()}`, {cache:'no-store',signal:AbortSignal.timeout(12000)});
     if (!response.ok) throw new Error('weather unavailable');
     const data = await response.json();
-    if (data.status !== 'ok' || typeof data.temperature !== 'number' || !WEATHER_ICONS[data.icon]) throw new Error('invalid weather');
-    const body = document.createElement('div');body.className='weather-body';
-    body.innerHTML = `<svg class="weather-icon" viewBox="0 0 24 24" aria-hidden="true">${WEATHER_ICONS[data.icon]}</svg>
-      <div><p class="weather-desc">${data.description}</p><p class="weather-temp">${data.temperature}°C</p></div>`;
-    container.replaceChildren(body);
-    const range = document.createElement('p');range.className='weather-range';range.textContent=`최저 ${data.tempMin}° · 최고 ${data.tempMax}°`;
-    container.append(range);
+    if (data.status !== 'ok' || typeof data.temperature !== 'number') throw new Error('invalid weather');
+    const key = weatherSceneKey(data.icon, data.isDay !== false);
+    const scene = WEATHER_SCENES[key];
+    document.getElementById('weatherCard').style.background = `linear-gradient(160deg, ${scene.grad[0]}, ${scene.grad[1]})`;
+    document.getElementById('weatherMountain').style.setProperty('--mtn', scene.mtn);
+    const face = document.createElement('div');
+    face.className = 'weather-face';
+    face.innerHTML = `<svg class="weather-icon-lg icon-${key}" viewBox="0 0 24 24" aria-hidden="true">${scene.icon}</svg>
+      <div><p class="weather-temp">${data.temperature}°</p><p class="weather-desc">${data.description}</p><p class="weather-range">최저 ${data.tempMin}° · 최고 ${data.tempMax}°</p></div>`;
+    const foot = document.createElement('div');
+    foot.className = 'weather-foot';
+    foot.innerHTML = `<time class="weather-clock" id="weatherClock"></time><p class="weather-loc">${data.location || ''}</p>`;
+    container.replaceChildren(face, foot);
+    tickWeatherClock();
   } catch { message('날씨 정보를 불러오지 못했습니다.'); }
 }
 loadWeather();
 setInterval(loadWeather, 600000);
+setInterval(tickWeatherClock, 30000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) loadWeather(); });
