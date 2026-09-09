@@ -28,9 +28,6 @@ async function loadMeal() {
   const now = new Date();
   const today = koreaDate(now);
   renderedDate = today;
-  const dateEl = document.getElementById('meal-date');
-  dateEl.textContent = new Intl.DateTimeFormat('ko-KR', {timeZone:'Asia/Seoul',month:'long',day:'numeric',weekday:'long'}).format(now);
-  dateEl.dateTime = `${today.slice(0,4)}-${today.slice(4,6)}-${today.slice(6,8)}`;
   const container = document.getElementById('meal-content');
   const message = text => { const p=document.createElement('p');p.className='meal-message';p.textContent=text;container.replaceChildren(p); };
   try {
