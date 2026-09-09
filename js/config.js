@@ -3,5 +3,6 @@ const CONFIG = Object.freeze({
   schoolDataUrl: 'https://docs.google.com/spreadsheets/d/1C-bhOsLn_u3k9JDVQ3D7w9lEkEW2xbzUGJxRSLqf250/edit?usp=drive_link',
   sharedDriveUrl: 'https://drive.google.com/drive/folders/0AMq81Hlj4oJlUk9PVA',
   mealUrl: 'data/meal.json',
-  weatherUrl: 'data/weather.json'
+  weatherUrl: 'data/weather.json',
+  ddayUrl: 'data/dday.json'
 });

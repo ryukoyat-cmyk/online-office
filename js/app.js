@@ -102,3 +102,35 @@ loadWeather();
 setInterval(loadWeather, 600000);
 setInterval(tickWeatherClock, 30000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) loadWeather(); });
+
+async function loadDday() {
+  const container = document.getElementById('dday-content');
+  const message = text => { const p=document.createElement('p');p.className='meal-message';p.textContent=text;container.replaceChildren(p); };
+  try {
+    const response = await fetch(`${CONFIG.ddayUrl}?t=${Date.now()}`, {cache:'no-store',signal:AbortSignal.timeout(12000)});
+    if (!response.ok) throw new Error('dday unavailable');
+    const data = await response.json();
+    if (data.status !== 'ok' || !Array.isArray(data.events) || !data.events.length) throw new Error('invalid dday');
+    const [first, ...rest] = data.events;
+    const ddayLabel = first.dday === 0 ? 'D-DAY' : first.dday > 0 ? `D-${first.dday}` : `D+${-first.dday}`;
+    const main = document.createElement('div');
+    main.className = 'dday-main';
+    main.innerHTML = `<p class="dday-number">${ddayLabel}</p><p class="dday-label">${first.label}</p><p class="dday-date">${first.date}</p>`;
+    container.replaceChildren(main);
+    if (rest.length) {
+      const list = document.createElement('ul');
+      list.className = 'dday-next';
+      for (const e of rest) {
+        const li = document.createElement('li');
+        const label = document.createElement('span'); label.textContent = e.label;
+        const dd = document.createElement('span'); dd.textContent = e.dday === 0 ? 'D-DAY' : e.dday > 0 ? `D-${e.dday}` : `D+${-e.dday}`;
+        li.append(label, dd);
+        list.append(li);
+      }
+      container.append(list);
+    }
+  } catch { message('일정 정보를 불러오지 못했습니다.'); }
+}
+loadDday();
+setInterval(loadDday, 3600000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) loadDday(); });
