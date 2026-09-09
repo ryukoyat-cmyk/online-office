@@ -12,10 +12,7 @@ document.querySelectorAll('.search').forEach(form => {
 function tickHeroClock() {
   const el = document.getElementById('heroClock');
   if (!el) return;
-  const now = new Date();
-  const date = new Intl.DateTimeFormat('ko-KR', {timeZone:'Asia/Seoul',month:'long',day:'numeric',weekday:'long'}).format(now);
-  const time = new Intl.DateTimeFormat('ko-KR', {timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit',hour12:false}).format(now);
-  el.textContent = `${date} · ${time}`;
+  el.textContent = new Intl.DateTimeFormat('ko-KR', {timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date());
 }
 tickHeroClock();
 setInterval(tickHeroClock, 30000);
