@@ -33,14 +33,10 @@ jobs:
         id: weather
         continue-on-error: true
         run: python scripts/fetch_weather.py
-      - name: Fetch upcoming events (D-day)
+      - name: Compute upcoming events (D-day)
         id: dday
         continue-on-error: true
-        env:
-          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
-        run: |
-          pip install --quiet google-auth requests
-          python scripts/fetch_dday.py
+        run: python scripts/fetch_dday.py
       - name: Prepare public files
         run: |
           mkdir -p _site
@@ -66,5 +62,5 @@ jobs:
       - name: Report D-day update failure
         if: steps.dday.outcome == 'failure'
         run: |
-          echo '::error::D-day update failed. Pages was deployed with an honest error state. Check that the GOOGLE_SERVICE_ACCOUNT_JSON secret is set and the spreadsheet is shared with that service account as a Viewer.'
+          echo '::error::D-day update failed. Pages was deployed with an honest error state. Check data/dday-source.json for a valid label/date entry.'
           exit 1
