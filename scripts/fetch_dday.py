@@ -1,50 +1,29 @@
-"""Fetch upcoming events (D-day) from the '방학' sheet tab via a Google service account.
+"""Compute upcoming events (D-day) from data/dday-source.json.
 
-Requires the GOOGLE_SERVICE_ACCOUNT_JSON secret (the full service account key JSON)
-and the `google-auth` package. The spreadsheet must be shared with the service
-account's email address as a Viewer.
+The event list is maintained directly in this repository (edit
+data/dday-source.json on GitHub whenever the school calendar changes) —
+no external service or credentials are required.
 """
 import json
-import os
 import sys
-import time
-from datetime import date, datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from urllib.parse import quote
-from urllib.request import Request, urlopen
-
-from google.auth.transport.requests import Request as AuthRequest
-from google.oauth2 import service_account
 
 ROOT = Path(__file__).resolve().parents[1]
 KST = timezone(timedelta(hours=9))
-SPREADSHEET_ID = '1S9G-9O20as8rz_Sob7lVXcKczfeWxuiYNlxr-MALDlk'
-SHEET_RANGE = "'방학'!A2:B"
-SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
 
 
-def get_access_token():
-    key_json = os.environ['GOOGLE_SERVICE_ACCOUNT_JSON']
-    info = json.loads(key_json)
-    credentials = service_account.Credentials.from_service_account_info(info, scopes=SCOPES)
-    credentials.refresh(AuthRequest())
-    return credentials.token
-
-
-def fetch_rows(token):
-    url = f'https://sheets.googleapis.com/v4/spreadsheets/{SPREADSHEET_ID}/values/{quote(SHEET_RANGE, safe="")}'
-    request = Request(url, headers={'Authorization': f'Bearer {token}'})
-    with urlopen(request, timeout=20) as response:
-        data = json.load(response)
-    return data.get('values', [])
+def load_source():
+    path = ROOT / 'data' / 'dday-source.json'
+    with path.open(encoding='utf-8') as f:
+        return json.load(f)
 
 
 def parse_events(rows, today):
     events = []
     for row in rows:
-        if len(row) < 2:
-            continue
-        label, raw_date = row[0].strip(), row[1].strip()
+        label = row.get('label', '').strip()
+        raw_date = row.get('date', '').strip()
         if not label or not raw_date:
             continue
         try:
@@ -60,19 +39,14 @@ def main():
     now = datetime.now(KST)
     today = now.date()
     payload = {'updatedAt': now.isoformat(), 'status': 'error', 'events': []}
-    for attempt in range(3):
-        try:
-            token = get_access_token()
-            rows = fetch_rows(token)
-            events = parse_events(rows, today)
-            upcoming = [e for e in events if e['dday'] >= 0]
-            payload['events'] = upcoming[:3] if upcoming else events[-1:]
-            payload['status'] = 'ok'
-            break
-        except Exception as exc:
-            print(f'D-day fetch attempt {attempt + 1} failed: {exc!r}', file=sys.stderr)
-            if attempt < 2:
-                time.sleep(2 ** attempt)
+    try:
+        rows = load_source()
+        events = parse_events(rows, today)
+        upcoming = [e for e in events if e['dday'] >= 0]
+        payload['events'] = upcoming[:3] if upcoming else events[-1:]
+        payload['status'] = 'ok'
+    except Exception as exc:
+        print(f'D-day compute failed: {exc!r}', file=sys.stderr)
     path = ROOT / 'data' / 'dday.json'
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix('.tmp')
