@@ -25,3 +25,38 @@
 @media(min-width:768px) and (max-width:1023px){.cards{grid-template-columns:repeat(3,minmax(0,1fr))}.environment{gap:10px}.env-panel{padding:12px;min-height:132px}.env-panel h2{flex-wrap:wrap}.air-rows{gap:3px}.air-row{width:100%}.card{min-height:240px}}
 @media(max-width:767px){.search,.environment,#jbe-portal{display:none}.hero{padding:28px 0 18px}h1{font-size:32px}.eyebrow{font-size:22px}.hero-dday{font-size:22px;margin-bottom:0}.cards{grid-template-columns:1fr}.card{min-height:auto;padding:22px}.card h2{font-size:24px}.meal-list{font-size:16px;max-height:none}.link-card .card-icon-wrap{min-height:100px}footer{padding:24px 0}}
 @media(min-width:1024px) and (max-height:768px){.hero{padding-top:24px}.card{min-height:224px}.card-icon{width:80px;height:80px}}
+
+/* Calm surfaces, precise type and restrained state accents. */
+.env-panel{--accent-ink:#706681;--accent-fill:#f0edf6;background:var(--surface);color:var(--text);border-color:var(--border);box-shadow:none;padding:12px 18px;position:relative}
+.env-panel h2{font-size:13px;font-weight:600;line-height:18px;color:var(--muted);margin-bottom:5px;letter-spacing:-.01em}
+.env-panel h2>span{display:none}.env-panel small{font-size:12px;color:var(--muted)}
+.env-main{font-size:18px;line-height:25px;font-weight:700;letter-spacing:-.025em}.env-note{color:var(--muted);line-height:17px}
+.weather-panel[data-scene=clear]{--accent-ink:#b87b12;--accent-fill:#fff5dc}
+.weather-panel[data-scene=cloudy]{--accent-ink:#6e70af;--accent-fill:#f0effb}
+.weather-panel:is([data-scene=rain],[data-scene=snow],[data-scene=storm]){--accent-ink:#3a7db9;--accent-fill:#eaf3fc}
+[data-tone=good]{--accent-ink:#2671b1;--accent-fill:#eaf3fc}
+[data-tone=fair]{--accent-ink:#218361;--accent-fill:#e9f5ef}
+[data-tone=bad]{--accent-ink:#a65d16;--accent-fill:#fff1df}
+[data-tone=very-bad]{--accent-ink:#bd4156;--accent-fill:#fcecef}
+.weather-reading{display:flex;align-items:center;gap:10px;height:32px;margin-bottom:3px;white-space:nowrap}
+.weather-reading svg{width:28px;height:28px;fill:none;stroke:var(--accent-ink);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.weather-reading strong{font-size:28px;font-weight:650;letter-spacing:-.06em}.weather-label{font-size:14px;font-weight:500}.weather-range{font-size:12px;font-weight:400;color:var(--muted);margin-left:auto}
+.air-rows{gap:18px;min-height:32px}.air-row{gap:7px}.air-row strong{font-size:22px;font-weight:650;letter-spacing:-.04em}
+.grade-badge{background:var(--accent-fill);color:var(--accent-ink);padding:3px 7px;border-radius:5px;font-weight:600}
+.air-panel .env-note{margin-top:3px}
+.activity-panel .env-main{display:flex;align-items:center;gap:8px;color:var(--accent-ink);line-height:23px}
+.activity-panel .env-main::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--accent-ink);flex:none}
+.activity-panel::after{content:'';position:absolute;right:18px;top:15px;width:26px;height:3px;border-radius:2px;background:var(--accent-ink);opacity:.6}
+.activity-panel h2 small{margin-left:0}.activity-details{margin-top:2px}.activity-details summary{color:var(--muted);font-weight:500;font-size:12px;line-height:15px}.criteria{color:var(--text)}
+@media(prefers-color-scheme:dark){
+ .env-panel{--accent-ink:#b5aaca;--accent-fill:#302b3b;background:var(--surface);color:var(--text);border-color:var(--border)}
+ .weather-panel[data-scene=clear]{--accent-ink:#e5bd69;--accent-fill:#3b3222}
+ .weather-panel[data-scene=cloudy]{--accent-ink:#b2ade7;--accent-fill:#302d48}
+ .weather-panel:is([data-scene=rain],[data-scene=snow],[data-scene=storm]){--accent-ink:#8bbbea;--accent-fill:#22354a}
+ [data-tone=good]{--accent-ink:#8bbbea;--accent-fill:#22354a}
+ [data-tone=fair]{--accent-ink:#84ceaf;--accent-fill:#213b31}
+ [data-tone=bad]{--accent-ink:#edbb79;--accent-fill:#423321}
+ [data-tone=very-bad]{--accent-ink:#ec9aad;--accent-fill:#452a33}
+ .grade-badge{color:var(--accent-ink)}
+}
+@media(min-width:768px) and (max-width:1023px){.env-panel{padding:12px}.air-rows{gap:0}.weather-reading{flex-wrap:wrap;height:auto}.weather-range{margin-left:0}.activity-panel::after{display:none}}

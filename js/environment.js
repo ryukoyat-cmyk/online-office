@@ -73,7 +73,7 @@ if (typeof document !== 'undefined') {
     const state = activityState(data);
     document.getElementById('activityPanel').dataset.tone = state.tone;
     const activity = document.getElementById('activity-content');
-    activity.replaceChildren(el('p', 'env-main', `${state.tone === 'unknown' ? '○' : '●'} ${state.title}`), el('p', 'env-note', state.note));
+    activity.replaceChildren(el('p', 'env-main', state.title), el('p', 'env-note', state.note));
     if (state.tone === 'unknown') activity.lastChild.append(' ', officialLink());
   }
   async function fetchData(url, signal) {
@@ -89,10 +89,23 @@ if (typeof document !== 'undefined') {
       if (signal.aborted || !desktop.matches) return;
       if (data.status !== 'ok' || ![data.temperature, data.tempMin, data.tempMax].every(Number.isFinite) ||
           typeof data.description !== 'string' || !freshTimestamp(data.observedAt)) throw new Error('invalid');
-      const icons = {clear: data.isDay === false ? '☾' : '☀', cloudy: '☁', fog: '≋', rain: '☂', snow: '❄', storm: 'ϟ'};
+      const icons = {
+        clear: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/>',
+        cloudy: '<path d="M7 18h11a4 4 0 0 0 0-8 6 6 0 0 0-11-2 5 5 0 0 0 0 10Z"/>',
+        rain: '<path d="M6 14h12a4 4 0 0 0 0-8 6 6 0 0 0-11-1 5 5 0 0 0-1 9Zm2 4-1 3m6-3-1 3m6-3-1 3"/>',
+        snow: '<path d="M12 2v20M3.3 7l17.4 10M3.3 17 20.7 7M9 4l3 3 3-3M9 20l3-3 3 3"/>',
+        fog: '<path d="M4 8h16M2 12h20M4 16h16M7 20h10"/>',
+        storm: '<path d="m13 2-8 12h6l-1 8 9-13h-7l1-7Z"/>'
+      };
       panel.dataset.scene = ['clear', 'rain', 'snow', 'storm'].includes(data.icon) ? data.icon : 'cloudy';
-      content.replaceChildren(el('p', 'env-main weather-reading', `${icons[data.icon] || '☁'} ${data.temperature}° ${data.description}`),
-        el('p', 'env-note', `최저 ${data.tempMin}° · 최고 ${data.tempMax}°`),
+      const reading = el('p', 'env-main weather-reading', '');
+      const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      icon.setAttribute('viewBox', '0 0 24 24');
+      icon.setAttribute('aria-hidden', 'true');
+      icon.innerHTML = icons[data.icon] || icons.cloudy;
+      reading.append(icon, el('strong', '', `${data.temperature}°`), el('span', 'weather-label', data.description),
+        el('span', 'weather-range', `${data.tempMin}° / ${data.tempMax}°`));
+      content.replaceChildren(reading,
         el('p', 'env-note', `${data.location || '전주시'} · ${stamp(data.observedAt)}`));
     } catch {
       if (!desktop.matches || (signal.aborted && signal.reason?.name !== 'TimeoutError')) return;
