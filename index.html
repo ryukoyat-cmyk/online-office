@@ -9,7 +9,9 @@
   <title>온라인 교무실</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/environment.css">
   <script src="js/config.js" defer></script>
+  <script src="js/environment.js" defer></script>
   <script src="js/app.js" defer></script>
 </head>
 <body>
@@ -25,46 +27,58 @@
         <button type="submit" aria-label="Google 검색 (새 탭)"><span aria-hidden="true">↵</span></button>
       </form>
     </header>
-    <section class="cards" aria-label="오늘의 날씨·식단과 학교 업무 바로가기, 전북 업무포털">
-      <article class="card weather-card" id="weatherCard" aria-labelledby="weather-title">
-        <div class="weather-scene" aria-hidden="true">
-          <svg class="weather-mountain" id="weatherMountain" viewBox="0 0 240 100" preserveAspectRatio="none"><path d="M0 100 L38 52 L70 76 L108 30 L145 72 L182 44 L240 100 Z"/></svg>
-        </div>
-        <div class="weather-inner">
-          <span class="index" aria-hidden="true">01 / TODAY’S WEATHER</span>
-          <h2 id="weather-title">오늘의 날씨</h2>
-          <div id="weather-content" role="status" aria-live="polite">
-            <p class="meal-message">날씨 정보를 불러오는 중입니다.</p>
-          </div>
-        </div>
-        <noscript><p>날씨를 보려면 JavaScript를 켜 주세요.</p></noscript>
+    <section class="environment" aria-label="날씨와 미세먼지 기준 실외 활동 안내">
+      <article class="env-panel weather-panel" id="weatherPanel" data-scene="cloudy" aria-labelledby="weather-title">
+        <h2 id="weather-title"><span aria-hidden="true">☀</span> 오늘의 날씨</h2>
+        <div id="weather-content" role="status" aria-live="polite"><p class="env-note">날씨 확인 중</p></div>
       </article>
+      <article class="env-panel air-panel" id="airPanel" data-tone="unknown" aria-labelledby="air-title">
+        <h2 id="air-title"><span aria-hidden="true">≋</span> 미세먼지 <small>㎍/㎥</small></h2>
+        <div id="air-content" role="status" aria-live="polite"><p class="env-note">관측값 확인 중</p></div>
+      </article>
+      <article class="env-panel activity-panel" id="activityPanel" data-tone="unknown" aria-labelledby="activity-title">
+        <h2 id="activity-title"><span aria-hidden="true">◎</span> 실외 활동 안내 <small>미세먼지 기준</small></h2>
+        <div id="activity-content" role="status" aria-live="polite"><p class="env-main">판단 확인 필요</p></div>
+        <details class="activity-details">
+          <summary>판단 기준 보기</summary>
+          <div class="criteria">
+            <p>미세먼지와 초미세먼지 중 더 나쁜 상태를 적용합니다. 좋음·보통은 미세먼지 기준 활동 가능, 나쁨 이상은 실외 활동 자제·실내 활동 전환 권고입니다. 민감군 학생은 건강 상태를 함께 확인하세요.</p>
+            <p>전북 중부권 공식 주의보·경보 발령 시 실외수업 금지를 안내합니다. 농도 등급만으로 경보 발령을 추정하지 않습니다. 학교의 대응 지침과 최종 판단을 함께 확인하세요.</p>
+            <p>PM10: 좋음 0~30 / 보통 31~80 / 나쁨 81~150 / 매우 나쁨 151 이상. PM2.5: 좋음 0~15 / 보통 16~35 / 나쁨 36~75 / 매우 나쁨 76 이상 (㎍/㎥).</p>
+            <p>측정값 또는 경보 조회가 2시간 이상 오래되거나 필요한 정보가 없으면 판단 확인 필요로 표시합니다. 비·눈·폭염 등은 활동 판단에 포함하지 않습니다.</p>
+            <p><a href="https://www.airkorea.or.kr/web/main.do" target="_blank" rel="noopener noreferrer">에어코리아 확인 ↗</a> · <a href="https://use.go.kr/edusafe/infect/dust.jsp" target="_blank" rel="noopener noreferrer">교육청 대응체계 ↗</a></p>
+          </div>
+        </details>
+      </article>
+      <noscript><p>날씨와 미세먼지 안내를 보려면 JavaScript를 켜 주세요. <a href="https://www.airkorea.or.kr/web/main.do">에어코리아 확인</a></p></noscript>
+    </section>
+    <section class="cards" aria-label="오늘의 식단과 학교 업무 바로가기">
       <article class="card meal-card" aria-labelledby="meal-title">
-        <span class="index" aria-hidden="true">02 / TODAY’S LUNCH</span>
+        <span class="index" aria-hidden="true">01 / TODAY’S LUNCH</span>
         <h2 id="meal-title">오늘의 식단</h2>
         <div id="meal-content" role="status" aria-live="polite"><p class="meal-message">식단 정보를 불러오는 중입니다.</p></div>
         <noscript><p>식단을 보려면 JavaScript를 켜 주세요.</p></noscript>
       </article>
       <a class="card link-card" id="schedule" href="https://docs.google.com/spreadsheets/d/1S9G-9O20as8rz_Sob7lVXcKczfeWxuiYNlxr-MALDlk/edit?usp=drive_link" target="_blank" rel="noopener noreferrer" aria-label="오늘의 일정 (새 탭)">
-        <span class="index" aria-hidden="true">03 / SCHEDULE</span>
+        <span class="index" aria-hidden="true">02 / SCHEDULE</span>
         <h2>오늘의 일정</h2>
         <div class="card-icon-wrap"><img class="card-icon" src="assets/schedule-icon.png" alt="오늘의 일정" width="96" height="96" loading="lazy" onerror="this.closest('.card-icon-wrap').style.display='none'"></div>
         <div class="card-bottom"><svg class="link-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14 20 4"/><path d="M14 4h6v6"/><path d="M17 13v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h6"/></svg></div>
       </a>
       <a class="card link-card" id="school-data" href="https://docs.google.com/spreadsheets/d/1C-bhOsLn_u3k9JDVQ3D7w9lEkEW2xbzUGJxRSLqf250/edit?usp=drive_link" target="_blank" rel="noopener noreferrer" aria-label="우리학교 기초자료 (새 탭)">
-        <span class="index" aria-hidden="true">04 / RESOURCES</span>
+        <span class="index" aria-hidden="true">03 / RESOURCES</span>
         <h2>우리학교 기초자료</h2>
         <div class="card-icon-wrap"><img class="card-icon" src="assets/resources-icon.png" alt="우리학교 기초자료" width="96" height="96" loading="lazy" onerror="this.closest('.card-icon-wrap').style.display='none'"></div>
         <div class="card-bottom"><svg class="link-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14 20 4"/><path d="M14 4h6v6"/><path d="M17 13v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h6"/></svg></div>
       </a>
       <a class="card link-card" id="drive" href="https://drive.google.com/drive/folders/0AMq81Hlj4oJlUk9PVA" target="_blank" rel="noopener noreferrer" aria-label="우리학교 공유 드라이브 (새 탭)">
-        <span class="index" aria-hidden="true">05 / SHARED DRIVE</span>
+        <span class="index" aria-hidden="true">04 / SHARED DRIVE</span>
         <h2>우리학교<br>공유 드라이브</h2>
         <div class="card-icon-wrap"><img class="card-icon" src="assets/shared-drive-icon.png" alt="우리학교 공유 드라이브" width="96" height="96" loading="lazy" onerror="this.closest('.card-icon-wrap').style.display='none'"></div>
         <div class="card-bottom"><svg class="link-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14 20 4"/><path d="M14 4h6v6"/><path d="M17 13v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h6"/></svg></div>
       </a>
       <a class="card link-card" id="jbe-portal" href="https://jbe.eduptl.kr/bpm_man_mn00_001.do" target="_blank" rel="noopener noreferrer" aria-label="전북 업무포털 (새 탭)">
-        <span class="index" aria-hidden="true">06 / JBE PORTAL</span>
+        <span class="index" aria-hidden="true">05 / JBE PORTAL</span>
         <h2>전북 업무포털</h2>
         <div class="card-icon-wrap"><img class="card-icon" src="assets/image-1789117911660.webp" alt="전북 업무포털" width="96" height="96" loading="lazy" onerror="this.closest('.card-icon-wrap').style.display='none'"></div>
         <div class="card-bottom"><svg class="link-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14 20 4"/><path d="M14 4h6v6"/><path d="M17 13v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h6"/></svg></div>

@@ -10,7 +10,7 @@ from urllib.request import Request, urlopen
 ROOT = Path(__file__).resolve().parents[1]
 KST = timezone(timedelta(hours=9))
 
-ADDRESS = '전북특별시 전주시 완산구 대동로 33'
+ADDRESS = '전북특별자치도 전주시 완산구 대동로 33'
 LOCATION_LABEL = '전주시 완산구'
 # Fallback center of Jeonju, used if the address lookup below fails for any reason.
 FALLBACK_LATITUDE, FALLBACK_LONGITUDE = 35.8242, 127.1480
@@ -53,6 +53,7 @@ def parse_response(data):
     daily = data['daily']
     label, icon = WEATHER_CODES.get(int(current['weather_code']), ('알 수 없음', 'cloudy'))
     return {
+        'observedAt': datetime.fromisoformat(current['time']).replace(tzinfo=KST).isoformat(),
         'temperature': round(current['temperature_2m']),
         'tempMax': round(daily['temperature_2m_max'][0]),
         'tempMin': round(daily['temperature_2m_min'][0]),

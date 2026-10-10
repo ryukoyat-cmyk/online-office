@@ -1,0 +1,27 @@
+.hero{padding:30px 0 20px}.eyebrow{font-size:20px;margin-bottom:6px}h1{font-size:42px;margin-bottom:8px}.hero-dday{font-size:20px;margin-bottom:18px}.search{height:52px}
+.environment{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:20px;align-items:start;text-align:left}
+.env-panel{--panel-start:#f0edf8;--panel-end:#e8e5f3;--ink:#51446c;--edge:#d9d0ea;background:linear-gradient(115deg,var(--panel-start),var(--panel-end));color:var(--ink);border:1px solid var(--edge);border-radius:16px;padding:10px 16px;min-height:104px;box-shadow:0 4px 12px -8px var(--ink);min-width:0}
+.env-panel h2{font-size:16px;font-weight:750;line-height:20px;margin-bottom:4px;display:flex;align-items:center;gap:7px}.env-panel h2>span{font-size:21px}.env-panel small{font-size:12px;font-weight:500;margin-left:auto}.env-main{font-size:18px;font-weight:750;line-height:23px;overflow-wrap:anywhere}.env-note{font-size:12px;line-height:17px;overflow-wrap:anywhere}.weather-reading{font-size:20px;line-height:24px}
+.weather-panel[data-scene=clear]{--panel-start:#ddf3ff;--panel-end:#fff2c9;--ink:#194b72;--edge:#c4e6f8}.weather-panel[data-scene=cloudy]{--panel-start:#e5e9ff;--panel-end:#eae0ff;--ink:#4b4680;--edge:#d4cff0}.weather-panel:is([data-scene=rain],[data-scene=snow],[data-scene=storm]){--panel-start:#d8eeff;--panel-end:#dbe6fa;--ink:#244f82;--edge:#bcd6f0}
+[data-tone=good]{--panel-start:#e3f2ff;--panel-end:#d5eaff;--ink:#185586;--edge:#b9daf5}
+[data-tone=fair]{--panel-start:#e3f8ea;--panel-end:#cef0dc;--ink:#16623e;--edge:#afe1c4}
+[data-tone=bad]{--panel-start:#fff1d7;--panel-end:#ffe1b9;--ink:#854509;--edge:#f2ca91}
+[data-tone=very-bad]{--panel-start:#ffe6e5;--panel-end:#ffd4d5;--ink:#9c2836;--edge:#f1b4bc}
+.air-rows{display:flex;align-items:center;gap:12px;flex-wrap:wrap;min-height:30px}.air-row{display:flex;align-items:center;gap:5px;font-size:12px}.air-row strong{font-size:18px;font-variant-numeric:tabular-nums}.grade-badge{background:var(--ink);color:#fff;padding:2px 6px;border-radius:6px;font-weight:700;font-size:12px;white-space:nowrap}.air-panel .env-note{margin-top:4px}
+.activity-details{font-size:12px;margin-top:3px}.activity-details summary{cursor:pointer;width:fit-content;font-weight:650;border-radius:4px}.activity-details summary:focus-visible{outline:2px solid currentColor;outline-offset:3px}.criteria{padding-top:10px;line-height:1.65}.criteria p+p{margin-top:8px}.env-panel a{color:inherit;text-underline-offset:2px}.official-link{white-space:nowrap}
+.cards{grid-template-columns:repeat(5,minmax(0,1fr))}.card{min-height:238px;padding:20px 18px}.card h2{font-size:22px}.index{margin-bottom:14px}.meal-list{font-size:14px;gap:4px;max-height:190px}footer{padding:22px 20px 18px}footer p{font-size:12px}footer .copyright{font-size:12px;margin-top:4px}
+@media(prefers-color-scheme:dark){
+ .env-panel{--panel-start:#2b263e;--panel-end:#342d48;--ink:#e1d7fa;--edge:#51456c}
+ .weather-panel[data-scene=clear]{--panel-start:#173d55;--panel-end:#494225;--ink:#e6f3ff;--edge:#436477}
+ .weather-panel[data-scene=cloudy]{--panel-start:#2a3158;--panel-end:#3a2d54;--ink:#e9e5ff;--edge:#514b78}
+ .weather-panel:is([data-scene=rain],[data-scene=snow],[data-scene=storm]){--panel-start:#183953;--panel-end:#263454;--ink:#dbedff;--edge:#3b587b}
+ [data-tone=good]{--panel-start:#17374e;--panel-end:#213d59;--ink:#c2e4ff;--edge:#3b5f80}
+ [data-tone=fair]{--panel-start:#183f32;--panel-end:#234738;--ink:#b8f0cf;--edge:#396c53}
+ [data-tone=bad]{--panel-start:#49351e;--panel-end:#523b26;--ink:#ffdda8;--edge:#806038}
+ [data-tone=very-bad]{--panel-start:#4c252d;--panel-end:#542e36;--ink:#ffd2da;--edge:#854551}
+ .grade-badge{color:#151923}
+}
+@media(min-width:1024px) and (min-height:900px){.hero{padding:48px 0 28px}.card{min-height:270px}footer{padding:30px 20px}}
+@media(min-width:768px) and (max-width:1023px){.cards{grid-template-columns:repeat(3,minmax(0,1fr))}.environment{gap:10px}.env-panel{padding:12px;min-height:132px}.env-panel h2{flex-wrap:wrap}.air-rows{gap:3px}.air-row{width:100%}.card{min-height:240px}}
+@media(max-width:767px){.search,.environment,#jbe-portal{display:none}.hero{padding:28px 0 18px}h1{font-size:32px}.eyebrow{font-size:22px}.hero-dday{font-size:22px;margin-bottom:0}.cards{grid-template-columns:1fr}.card{min-height:auto;padding:22px}.card h2{font-size:24px}.meal-list{font-size:16px;max-height:none}.link-card .card-icon-wrap{min-height:100px}footer{padding:24px 0}}
+@media(min-width:1024px) and (max-height:768px){.hero{padding-top:24px}.card{min-height:224px}.card-icon{width:80px;height:80px}}

@@ -1,0 +1,10 @@
+{
+  "status": "error",
+  "station": "삼천동",
+  "source": "한국환경공단 에어코리아",
+  "updatedAt": null,
+  "measuredAt": null,
+  "pm10": null,
+  "pm25": null,
+  "alerts": {"status": "error", "checkedAt": null, "active": []}
+}
