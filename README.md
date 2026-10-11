@@ -13,7 +13,7 @@
 3. Actions → Update meal and deploy Pages → Run workflow를 실행합니다.
 4. 성공한 실행의 배포 URL에서 확인합니다.
 
-매일 한국 시간 05:30에 급식을 조회하고 사이트를 다시 배포합니다. GitHub 예약 실행은 지연될 수 있습니다. 수동 실행도 가능합니다.
+매시간(매시 15분경, 주말·야간 포함) 급식을 조회하고 사이트를 다시 배포합니다. GitHub 예약 실행은 지연될 수 있습니다. 수동 실행도 가능합니다.
 
 ## 급식
 
@@ -38,7 +38,7 @@ NEIS의 키 없는 호출로 먼저 동작합니다. 인증키를 사용할 경�
 
 측정소는 전주시 완산구 삼천동(용리로 107 삼천도서관 옥상)입니다. [에어코리아 측정소 목록](https://www.airkorea.or.kr/web/stationInfo)에서 PM10·PM2.5 측정항목을 확인했습니다. 학교 운동장 자체 측정값이 아니며 측정소명과 시각을 표시합니다. 경보는 전주·익산·완주가 포함된 **전북 중부권**을 적용합니다([전북도 권역 안내](https://www.jeonbuk.go.kr/newsroom/board/view.jeonbuk?boardId=BBS_0000090&dataSid=651938&menuCd=DOM_000001101000000000)).
 
-기존 매일 05:30 갱신 외에 평일 KST 07:15~17:15 매시간 날씨·미세먼지를 수집하고 Pages를 배포합니다. GitHub 예약 실행은 지연될 수 있습니다. 각 실행에서 급식·D-day도 다시 생성하므로 시간별 배포에 당일 자료가 포함됩니다. 브라우저는 화면 진입·복귀 및 10분 간격으로 JSON을 읽고 매분 자료 유효성을 다시 판단합니다.
+매시간(요일·시간대 무관) 날씨·미세먼지를 수집하고 Pages를 배포합니다. GitHub 예약 실행은 지연될 수 있습니다. 각 실행에서 급식·D-day도 다시 생성하므로 시간별 배포에 당일 자료가 포함됩니다. 브라우저는 화면 진입·복귀 및 10분 간격으로 JSON을 읽고 매분 자료 유효성을 다시 판단합니다.
 
 `data/air-quality.json`은 `status`, `station`, `source`, `updatedAt`, `measuredAt`(시간대 포함 ISO 8601), `pm10`, `pm25`, `alerts`를 제공합니다. `alerts`에는 `status`, `checkedAt`, `active` 목록이 있으며 각 경보에는 `pollutant`, `level`, `issuedAt`이 포함됩니다. 값 누락은 `null`로 기록합니다. `weather.json`에는 관측 시각 `observedAt`을 추가했습니다.
 
