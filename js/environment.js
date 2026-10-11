@@ -41,18 +41,17 @@ if (typeof document !== 'undefined') {
     node.textContent = text;
     return node;
   };
-  const stamp = value => {
-    const date = new Date(value);
-    return Number.isFinite(date.getTime()) ? new Intl.DateTimeFormat('ko-KR', {
-      timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false
-    }).format(date) : '시각 확인 필요';
-  };
-  function officialLink() {
-    const link = el('a', 'official-link', '에어코리아 확인 ↗');
-    link.href = 'https://www.airkorea.or.kr/web/main.do';
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
-    return link;
+  const places = {weather: '', air: ''};
+  const times = {weather: null, air: null};
+  function renderStamp() {
+    const out = document.getElementById('envStamp');
+    const known = Object.values(times).map(value => new Date(value)).filter(date => Number.isFinite(date.getTime()));
+    if (!out || !known.length) return;
+    const oldest = new Date(Math.min(...known));
+    const fmt = options => new Intl.DateTimeFormat('ko-KR', {timeZone: 'Asia/Seoul', hour12: false, ...options});
+    const sameDay = fmt({dateStyle: 'short'}).format(oldest) === fmt({dateStyle: 'short'}).format(new Date());
+    const when = fmt(sameDay ? {hour: '2-digit', minute: '2-digit'} : {month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit'}).format(oldest);
+    out.textContent = `${[places.weather, places.air].filter(Boolean).join(' · ')} · ${when} 기준`;
   }
   function renderAir(data) {
     const content = document.getElementById('air-content');
@@ -62,19 +61,22 @@ if (typeof document !== 'undefined') {
     const rows = el('div', 'air-rows', '');
     for (const [index, label, key] of [[0, '미세먼지', 'pm10'], [1, '초미세먼지', 'pm25']]) {
       const row = el('p', 'air-row', '');
-      row.append(el('span', '', label), el('strong', '', grades[index] === null ? '—' : String(data[key])));
+      row.append(el('span', 'air-label', label), el('strong', '', grades[index] === null ? '—' : String(data[key])));
       const badge = el('span', 'grade-badge', grades[index] === null ? '확인 필요' : AIR_GRADES[grades[index]]);
       badge.dataset.tone = grades[index] === null ? 'unknown' : AIR_TONES[grades[index]];
       row.append(badge);
       rows.append(row);
     }
-    const note = `${data?.station || '측정소 확인 필요'} · ${stamp(data?.measuredAt)}${valid ? '' : ' · 최신 확인 필요'}`;
-    content.replaceChildren(rows, el('p', 'env-note', note));
+    content.replaceChildren(rows);
+    places.air = data?.station || '';
+    times.air = data?.measuredAt || null;
+    renderStamp();
+    // Quiet unless action is needed: show a chip only for 나쁨 or worse, or an official alert.
     const state = activityState(data);
-    document.getElementById('activityPanel').dataset.tone = state.tone;
-    const activity = document.getElementById('activity-content');
-    activity.replaceChildren(el('p', 'env-main', state.title), el('p', 'env-note', state.note));
-    if (state.tone === 'unknown') activity.lastChild.append(' ', officialLink());
+    const chip = document.getElementById('alertChip');
+    chip.hidden = !['bad', 'very-bad'].includes(state.tone);
+    chip.dataset.tone = state.tone;
+    chip.textContent = state.title;
   }
   async function fetchData(url, signal) {
     const response = await fetch(`${url}?t=${Date.now()}`, {cache: 'no-store', signal});
@@ -98,19 +100,25 @@ if (typeof document !== 'undefined') {
         storm: '<path d="m13 2-8 12h6l-1 8 9-13h-7l1-7Z"/>'
       };
       panel.dataset.scene = ['clear', 'rain', 'snow', 'storm'].includes(data.icon) ? data.icon : 'cloudy';
-      const reading = el('p', 'env-main weather-reading', '');
+      const reading = el('p', 'weather-reading', '');
+      const tile = el('span', 'weather-icon', '');
       const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       icon.setAttribute('viewBox', '0 0 24 24');
       icon.setAttribute('aria-hidden', 'true');
       icon.innerHTML = icons[data.icon] || icons.cloudy;
-      reading.append(icon, el('strong', '', `${data.temperature}°`), el('span', 'weather-label', data.description),
+      tile.append(icon);
+      reading.append(tile, el('strong', '', `${data.temperature}°`), el('span', 'weather-label', data.description),
         el('span', 'weather-range', `${data.tempMin}° / ${data.tempMax}°`));
-      content.replaceChildren(reading,
-        el('p', 'env-note', `${data.location || '전주시'} · ${stamp(data.observedAt)}`));
+      places.weather = data.location || '전주시';
+      times.weather = data.observedAt;
+      renderStamp();
+      content.replaceChildren(reading);
     } catch {
       if (!desktop.matches || (signal.aborted && signal.reason?.name !== 'TimeoutError')) return;
       panel.dataset.scene = 'unknown';
-      content.replaceChildren(el('p', 'env-main', '날씨 확인 필요'), el('p', 'env-note', '최신 날씨 정보를 불러오지 못했습니다.'));
+      content.replaceChildren(el('p', 'env-note', '날씨 확인 필요 · 최신 정보를 불러오지 못했습니다.'));
+      times.weather = null;
+      renderStamp();
     }
   }
   async function loadAir(signal) {

@@ -8,6 +8,9 @@
   <meta name="description" content="전주초등학교 온라인 교무실 — 오늘의 날씨, 오늘의 식단, 오늘의 일정, 학교 기초자료와 공유 드라이브를 한곳에서.">
   <title>온라인 교무실</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400..800&display=swap">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/environment.css">
   <script src="js/config.js" defer></script>
@@ -17,9 +20,10 @@
 <body>
   <main>
     <header class="hero">
-      <p class="eyebrow">전주초등학교</p>
-      <h1>온라인 교무실</h1>
-      <p class="hero-dday" id="heroDday" aria-live="off"></p>
+      <div class="hero-title">
+        <h1>전주초등학교 온라인 교무실</h1>
+        <p class="hero-meta"><time id="heroDate"></time><span class="hero-dday" id="heroDday" aria-live="off"></span></p>
+      </div>
       <form class="search" action="https://www.google.com/search" method="get" target="_blank" rel="noopener noreferrer" role="search">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/></svg>
         <label class="sr-only" for="query">Google에서 검색하기</label>
@@ -27,30 +31,16 @@
         <button type="submit" aria-label="Google 검색 (새 탭)"><span aria-hidden="true">↵</span></button>
       </form>
     </header>
-    <section class="environment" aria-label="날씨와 미세먼지 기준 실외 활동 안내">
-      <article class="env-panel weather-panel" id="weatherPanel" data-scene="cloudy" aria-labelledby="weather-title">
-        <h2 id="weather-title"><span aria-hidden="true">☀</span> 오늘의 날씨</h2>
+    <section class="environment" aria-label="오늘의 날씨와 미세먼지">
+      <div class="env-item weather-item" id="weatherPanel" data-scene="cloudy">
         <div id="weather-content" role="status" aria-live="polite"><p class="env-note">날씨 확인 중</p></div>
-      </article>
-      <article class="env-panel air-panel" id="airPanel" data-tone="unknown" aria-labelledby="air-title">
-        <h2 id="air-title"><span aria-hidden="true">≋</span> 미세먼지 <small>㎍/㎥</small></h2>
+      </div>
+      <div class="env-item air-item" id="airPanel" data-tone="unknown">
         <div id="air-content" role="status" aria-live="polite"><p class="env-note">관측값 확인 중</p></div>
-      </article>
-      <article class="env-panel activity-panel" id="activityPanel" data-tone="unknown" aria-labelledby="activity-title">
-        <h2 id="activity-title"><span aria-hidden="true">◎</span> 실외 활동 안내 <small>미세먼지 기준</small></h2>
-        <div id="activity-content" role="status" aria-live="polite"><p class="env-main">판단 확인 필요</p></div>
-        <details class="activity-details">
-          <summary>판단 기준 보기</summary>
-          <div class="criteria">
-            <p>미세먼지와 초미세먼지 중 더 나쁜 상태를 적용합니다. 좋음·보통은 미세먼지 기준 활동 가능, 나쁨 이상은 실외 활동 자제·실내 활동 전환 권고입니다. 민감군 학생은 건강 상태를 함께 확인하세요.</p>
-            <p>전북 중부권 공식 주의보·경보 발령 시 실외수업 금지를 안내합니다. 농도 등급만으로 경보 발령을 추정하지 않습니다. 학교의 대응 지침과 최종 판단을 함께 확인하세요.</p>
-            <p>PM10: 좋음 0~30 / 보통 31~80 / 나쁨 81~150 / 매우 나쁨 151 이상. PM2.5: 좋음 0~15 / 보통 16~35 / 나쁨 36~75 / 매우 나쁨 76 이상 (㎍/㎥).</p>
-            <p>측정값 또는 경보 조회가 2시간 이상 오래되거나 필요한 정보가 없으면 판단 확인 필요로 표시합니다. 비·눈·폭염 등은 활동 판단에 포함하지 않습니다.</p>
-            <p><a href="https://www.airkorea.or.kr/web/main.do" target="_blank" rel="noopener noreferrer">에어코리아 확인 ↗</a> · <a href="https://use.go.kr/edusafe/infect/dust.jsp" target="_blank" rel="noopener noreferrer">교육청 대응체계 ↗</a></p>
-          </div>
-        </details>
-      </article>
-      <noscript><p>날씨와 미세먼지 안내를 보려면 JavaScript를 켜 주세요. <a href="https://www.airkorea.or.kr/web/main.do">에어코리아 확인</a></p></noscript>
+      </div>
+      <span class="alert-chip" id="alertChip" role="status" hidden></span>
+      <p class="env-stamp" id="envStamp"></p>
+      <noscript><p class="env-note">날씨와 미세먼지를 보려면 JavaScript를 켜 주세요. <a href="https://www.airkorea.or.kr/web/main.do">에어코리아 확인</a></p></noscript>
     </section>
     <section class="cards" aria-label="오늘의 식단과 학교 업무 바로가기">
       <article class="card meal-card" aria-labelledby="meal-title">

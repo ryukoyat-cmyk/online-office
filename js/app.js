@@ -38,7 +38,7 @@ setInterval(() => { if (koreaDate() !== renderedDate) loadMeal(); }, 60000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) loadMeal(); });
 
 function formatDday(n) {
-  return n === 0 ? 'D-DAY' : n > 0 ? `D-${n}` : `D+${-n}`;
+  return n >= 0 ? `D-${n}` : `D+${-n}`;
 }
 async function loadDday() {
   const el = document.getElementById('heroDday');
@@ -47,11 +47,22 @@ async function loadDday() {
     const response = await fetch(`${CONFIG.ddayUrl}?t=${Date.now()}`, {cache:'no-store',signal:AbortSignal.timeout(12000)});
     if (!response.ok) throw new Error('dday unavailable');
     const data = await response.json();
-    if (data.status !== 'ok' || !Array.isArray(data.events) || !data.events.length) throw new Error('invalid dday');
-    const [first] = data.events;
-    el.textContent = `${first.label} ${formatDday(first.dday)}`;
+    if (data.status !== 'ok' || !Array.isArray(data.events)) throw new Error('invalid dday');
+    // Only upcoming events are shown; after the date passes the label disappears.
+    const first = data.events.find(event => Number.isFinite(event.dday) && event.dday >= 0);
+    el.textContent = first ? `${first.label} ${formatDday(first.dday)}` : '';
   } catch { el.textContent = ''; }
 }
 loadDday();
 setInterval(loadDday, 3600000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) loadDday(); });
+function renderHeroDate() {
+  const el = document.getElementById('heroDate');
+  if (!el) return;
+  const now = new Date();
+  el.dateTime = koreaDate(now).replace(/(d{4})(d{2})(d{2})/, '$1-$2-$3');
+  el.textContent = new Intl.DateTimeFormat('ko-KR', {timeZone:'Asia/Seoul', month:'long', day:'numeric', weekday:'long'}).format(now);
+}
+renderHeroDate();
+setInterval(renderHeroDate, 60000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) renderHeroDate(); });

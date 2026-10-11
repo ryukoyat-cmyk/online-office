@@ -43,7 +43,9 @@ def main():
         rows = load_source()
         events = parse_events(rows, today)
         upcoming = [e for e in events if e['dday'] >= 0]
-        payload['events'] = upcoming[:3] if upcoming else events[-1:]
+        # Past events are dropped: once the last date has passed the list is empty
+        # and the page simply shows no D-day (no yearly maintenance required).
+        payload['events'] = upcoming[:3]
         payload['status'] = 'ok'
     except Exception as exc:
         print(f'D-day compute failed: {exc!r}', file=sys.stderr)
