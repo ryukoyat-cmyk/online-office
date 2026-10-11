@@ -41,6 +41,44 @@ if (typeof document !== 'undefined') {
     node.textContent = text;
     return node;
   };
+  const ICONS = {
+    clear: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/>',
+    moon: '<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z"/>',
+    cloudy: '<path d="M7 18h11a4 4 0 0 0 0-8 6 6 0 0 0-11-2 5 5 0 0 0 0 10Z"/>',
+    rain: '<path d="M6 14h12a4 4 0 0 0 0-8 6 6 0 0 0-11-1 5 5 0 0 0-1 9Zm2 4-1 3m6-3-1 3m6-3-1 3"/>',
+    snow: '<path d="M12 2v20M3.3 7l17.4 10M3.3 17 20.7 7M9 4l3 3 3-3M9 20l3-3 3 3"/>',
+    fog: '<path d="M4 8h16M2 12h20M4 16h16M7 20h10"/>',
+    storm: '<path d="m13 2-8 12h6l-1 8 9-13h-7l1-7Z"/>'
+  };
+  function weatherIcon(kind, isDay) {
+    const name = kind === 'clear' && !isDay ? 'moon' : (ICONS[kind] ? kind : 'cloudy');
+    const wrap = el('span', `wicon wi-${name}`, '');
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.innerHTML = ICONS[name];
+    wrap.append(svg);
+    return wrap;
+  }
+  // Next six hourly slots after now; hidden entirely when fewer than three usable slots remain.
+  function hourlyList(slots) {
+    if (!Array.isArray(slots)) return null;
+    const upcoming = slots.filter(slot => Number.isFinite(slot?.temperature) && Number.isFinite(Date.parse(slot.time)) &&
+      Date.parse(slot.time) > Date.now()).slice(0, 6);
+    if (upcoming.length < 3) return null;
+    const hourFormat = new Intl.DateTimeFormat('ko-KR', {timeZone: 'Asia/Seoul', hour: 'numeric', hour12: false});
+    const list = el('ol', 'weather-hourly', '');
+    list.setAttribute('aria-label', '시간대별 날씨');
+    for (const slot of upcoming) {
+      const item = document.createElement('li');
+      const hour = el('time', '', `${hourFormat.format(new Date(slot.time)).replace(/\D/g, '')}시`);
+      hour.dateTime = slot.time;
+      item.append(hour, weatherIcon(slot.icon, slot.isDay !== false), el('strong', '', `${slot.temperature}°`));
+      item.title = slot.description || '';
+      list.append(item);
+    }
+    return list;
+  }
   const places = {weather: '', air: ''};
   const times = {weather: null, air: null};
   function renderStamp() {
@@ -91,28 +129,20 @@ if (typeof document !== 'undefined') {
       if (signal.aborted || !desktop.matches) return;
       if (data.status !== 'ok' || ![data.temperature, data.tempMin, data.tempMax].every(Number.isFinite) ||
           typeof data.description !== 'string' || !freshTimestamp(data.observedAt)) throw new Error('invalid');
-      const icons = {
-        clear: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/>',
-        cloudy: '<path d="M7 18h11a4 4 0 0 0 0-8 6 6 0 0 0-11-2 5 5 0 0 0 0 10Z"/>',
-        rain: '<path d="M6 14h12a4 4 0 0 0 0-8 6 6 0 0 0-11-1 5 5 0 0 0-1 9Zm2 4-1 3m6-3-1 3m6-3-1 3"/>',
-        snow: '<path d="M12 2v20M3.3 7l17.4 10M3.3 17 20.7 7M9 4l3 3 3-3M9 20l3-3 3 3"/>',
-        fog: '<path d="M4 8h16M2 12h20M4 16h16M7 20h10"/>',
-        storm: '<path d="m13 2-8 12h6l-1 8 9-13h-7l1-7Z"/>'
-      };
-      panel.dataset.scene = ['clear', 'rain', 'snow', 'storm'].includes(data.icon) ? data.icon : 'cloudy';
-      const reading = el('p', 'weather-reading', '');
-      const tile = el('span', 'weather-icon', '');
-      const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      icon.setAttribute('viewBox', '0 0 24 24');
-      icon.setAttribute('aria-hidden', 'true');
-      icon.innerHTML = icons[data.icon] || icons.cloudy;
-      tile.append(icon);
-      reading.append(tile, el('strong', '', `${data.temperature}°`), el('span', 'weather-label', data.description),
-        el('span', 'weather-range', `${data.tempMin}° / ${data.tempMax}°`));
+      const known = ['clear', 'rain', 'snow', 'storm', 'fog'];
+      const isDay = data.isDay !== false;
+      panel.dataset.scene = known.includes(data.icon) ? data.icon : 'cloudy';
+      panel.dataset.day = isDay ? '1' : '0';
+      const now = el('div', 'weather-now', '');
+      const big = weatherIcon(data.icon, isDay);
+      big.classList.add('wicon-lg');
+      const meta = el('div', 'weather-meta', '');
+      meta.append(el('span', 'weather-label', data.description), el('span', 'weather-range', `${data.tempMin}° / ${data.tempMax}°`));
+      now.append(big, el('strong', 'weather-temp', `${data.temperature}°`), meta);
       places.weather = data.location || '전주시';
       times.weather = data.observedAt;
       renderStamp();
-      content.replaceChildren(reading);
+      content.replaceChildren(...[now, hourlyList(data.hourly)].filter(Boolean));
     } catch {
       if (!desktop.matches || (signal.aborted && signal.reason?.name !== 'TimeoutError')) return;
       panel.dataset.scene = 'unknown';

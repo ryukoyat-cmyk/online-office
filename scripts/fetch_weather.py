@@ -48,11 +48,34 @@ def geocode_address(address):
     return float(results[0]['lat']), float(results[0]['lon'])
 
 
+def parse_hourly(data, limit=12):
+    """Return the next hourly slots after the current observation (KST)."""
+    hourly = data['hourly']
+    now = datetime.fromisoformat(data['current']['time'])
+    slots = []
+    for stamp, temperature, code, is_day in zip(
+            hourly['time'], hourly['temperature_2m'], hourly['weather_code'], hourly['is_day']):
+        moment = datetime.fromisoformat(stamp)
+        if moment <= now or temperature is None or code is None:
+            continue
+        label, icon = WEATHER_CODES.get(int(code), ('알 수 없음', 'cloudy'))
+        slots.append({
+            'time': moment.replace(tzinfo=KST).isoformat(),
+            'temperature': round(temperature),
+            'description': label,
+            'icon': icon,
+            'isDay': bool(is_day),
+        })
+        if len(slots) == limit:
+            break
+    return slots
+
+
 def parse_response(data):
     current = data['current']
     daily = data['daily']
     label, icon = WEATHER_CODES.get(int(current['weather_code']), ('알 수 없음', 'cloudy'))
-    return {
+    result = {
         'observedAt': datetime.fromisoformat(current['time']).replace(tzinfo=KST).isoformat(),
         'temperature': round(current['temperature_2m']),
         'tempMax': round(daily['temperature_2m_max'][0]),
@@ -61,6 +84,12 @@ def parse_response(data):
         'icon': icon,
         'isDay': bool(current['is_day']),
     }
+    try:
+        result['hourly'] = parse_hourly(data)
+    except Exception:
+        # The hourly forecast is optional; never let it break the current weather.
+        result['hourly'] = []
+    return result
 
 
 def main():
@@ -76,8 +105,10 @@ def main():
     params = {
         'latitude': latitude, 'longitude': longitude,
         'current': 'temperature_2m,weather_code,is_day',
+        'hourly': 'temperature_2m,weather_code,is_day',
         'daily': 'temperature_2m_max,temperature_2m_min',
         'timezone': 'Asia/Seoul',
+        'forecast_days': 2,
     }
     payload = {'location': LOCATION_LABEL, 'date': date, 'updatedAt': now.isoformat(), 'status': 'error'}
     for attempt in range(3):
