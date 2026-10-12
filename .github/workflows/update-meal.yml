@@ -3,8 +3,8 @@ on:
   push:
     branches: [main]
   schedule:
-    # Every hour at :15 UTC (= :15 KST), every day including weekends and nights.
-    - cron: '15 * * * *'
+    # Avoid the busy start of the hour; extra opportunities mitigate scheduler delays.
+    - cron: '7,27,47 * * * *'
   workflow_dispatch:
 permissions:
   contents: read
