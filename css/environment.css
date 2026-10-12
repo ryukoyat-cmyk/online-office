@@ -51,6 +51,7 @@ h1{font-size:40px;margin:0;line-height:1.2;word-break:keep-all}
 
 .weather-body{position:relative;z-index:1;display:flex;align-items:center;flex-wrap:wrap;gap:8px 28px;width:100%;min-width:0}
 .weather-source{flex-basis:100%;font-size:12px;color:rgba(255,255,255,.92);line-height:16px}
+@media(min-width:1024px){.weather-item{flex:1 1 0}.air-item{max-width:440px}.env-stamp{white-space:normal}}
 .air-check-link{display:inline-block;margin-top:6px;font-size:12px;color:var(--muted);text-underline-offset:3px}
 .alert-chip[data-tone=unknown]{white-space:normal}
 .weather-now{display:flex;align-items:center;gap:14px;white-space:nowrap}
