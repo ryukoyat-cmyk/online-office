@@ -110,7 +110,8 @@ def main():
         'timezone': 'Asia/Seoul',
         'forecast_days': 2,
     }
-    payload = {'location': LOCATION_LABEL, 'date': date, 'updatedAt': now.isoformat(), 'status': 'error'}
+    payload = {'location': LOCATION_LABEL, 'latitude': latitude, 'longitude': longitude,
+               'date': date, 'updatedAt': now.isoformat(), 'status': 'error'}
     for attempt in range(3):
         try:
             with urlopen('https://api.open-meteo.com/v1/forecast?' + urlencode(params), timeout=25) as response:
