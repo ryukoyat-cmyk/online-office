@@ -49,8 +49,8 @@ h1{font-size:40px;margin:0;line-height:1.2;word-break:keep-all}
 @keyframes bolt-flash{0%,90%,100%{opacity:0}92%,96%{opacity:1}94%{opacity:.2}}
 @media(prefers-reduced-motion:reduce){.weather-scene *{animation:none!important}}
 
-.weather-body{position:relative;z-index:1;display:flex;align-items:center;flex-wrap:wrap;gap:8px 28px;width:100%;min-width:0}
-.weather-source{flex-basis:100%;font-size:12px;color:rgba(255,255,255,.92);line-height:16px}
+.weather-body{position:relative;z-index:1;display:flex;align-items:center;gap:16px;width:100%;min-width:0}
+.weather-source{position:absolute;left:0;bottom:-10px;font-size:12px;color:rgba(255,255,255,.92);line-height:16px}
 @media(min-width:1024px){.weather-item{flex:1 1 0}.air-item{max-width:440px}.env-stamp{white-space:normal}}
 .air-check-link{display:inline-block;margin-top:6px;font-size:12px;color:var(--muted);text-underline-offset:3px}
 .alert-chip[data-tone=unknown]{white-space:normal}
@@ -62,7 +62,7 @@ h1{font-size:40px;margin:0;line-height:1.2;word-break:keep-all}
 .weather-temp{font-size:46px;font-weight:700;letter-spacing:-.05em;line-height:1}
 .weather-meta{display:flex;flex-direction:column;gap:3px}.weather-label{font-size:17px;font-weight:700}.weather-range{font-size:14px;font-weight:500;opacity:.92;font-variant-numeric:tabular-nums}
 .weather-hourly{list-style:none;margin:0 0 0 auto;padding:10px 6px;display:flex;gap:2px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.26);border-radius:18px;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
-.weather-hourly li{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:60px;font-variant-numeric:tabular-nums}
+.weather-hourly li{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:54px;font-variant-numeric:tabular-nums}
 .weather-hourly time{font-size:13px;font-weight:500;opacity:.94}.weather-hourly strong{font-size:17px;font-weight:700}
 .weather-hourly,.weather-now{text-shadow:0 1px 3px rgba(0,30,90,.45)}
 /* Keep the hourly strip clear of the sun/moon in the top-right corner on wide screens. */
