@@ -101,7 +101,8 @@ def main():
     now = datetime.now(KST)
     payload = {'status': 'error', 'station': STATION, 'source': '한국환경공단 에어코리아',
                'updatedAt': now.isoformat(), 'measuredAt': None, 'pm10': None, 'pm25': None,
-               'alerts': {'status': 'error', 'checkedAt': None, 'active': []}}
+               'alerts': {'status': 'error', 'checkedAt': now.isoformat(), 'active': []}}
+    failures = []
     key = os.environ.get('AIRKOREA_API_KEY', '').strip()
     if key:
         try:
@@ -109,20 +110,22 @@ def main():
                                 {'stationName': STATION, 'dataTerm': 'DAILY', 'ver': '1.3', 'numOfRows': 24, 'pageNo': 1}, key)
             payload.update(observation(body['items']))
             payload['status'] = 'ok' if payload['pm10'] is not None and payload['pm25'] is not None else 'error'
-        except Exception:
-            pass
+        except Exception as error:
+            failures.append(f'observation: {type(error).__name__}')
         try:
             # Include previous-year records, so a December alert remains active after New Year.
             rows = all_alerts(key, now.year) + all_alerts(key, now.year - 1)
             payload['alerts'] = {'status': 'ok', 'checkedAt': now.isoformat(), 'active': active_alerts(rows, now)}
-        except Exception:
-            pass
+        except Exception as error:
+            failures.append(f'alerts: {type(error).__name__}')
+    else:
+        failures.append('AIRKOREA_API_KEY is not configured')
     destination = ROOT / 'data/air-quality.json'
     temporary = destination.with_suffix('.tmp')
     temporary.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     temporary.replace(destination)
     success = payload['status'] == 'ok' and payload['alerts']['status'] == 'ok'
-    print('Air quality update: ' + ('ok' if success else 'error; check AIRKOREA_API_KEY and access to both APIs'))
+    print('Air quality update: ' + ('ok' if success else 'error; ' + '; '.join(failures or ['incomplete response'])))
     return 0 if success else 1
 
 
