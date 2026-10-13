@@ -17,9 +17,9 @@ BASE = 'https://apis.data.go.kr/B552584/'
 
 def request_page(service, params, key):
     query = urlencode({'serviceKey': unquote(key), 'returnType': 'json', **params})
-    for attempt in range(3):
+    for attempt in range(2):
         try:
-            with urlopen(BASE + service + '?' + query, timeout=25) as response:
+            with urlopen(BASE + service + '?' + query, timeout=10) as response:
                 raw = json.load(response)['response']
             if raw['header']['resultCode'] != '00':
                 raise ValueError('API rejected request')
@@ -31,7 +31,7 @@ def request_page(service, params, key):
             # Do not log exception strings: HTTP errors may contain the secret URL.
             if attempt == 2:
                 raise ValueError('AirKorea request failed') from None
-            time.sleep(2 ** attempt)
+            time.sleep(1)
 
 
 def number(value, flag):
