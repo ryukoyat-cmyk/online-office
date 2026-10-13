@@ -227,7 +227,10 @@ if (typeof document !== 'undefined') {
     timer = setInterval(() => {
       // Reevaluate freshness every minute, even when the server JSON is unchanged.
       if (latestAir) renderAir(latestAir);
-      if (++ticks % 10 === 0 || (latestWeather && !freshTimestamp(latestWeather.observedAt))) refreshEnvironment();
+      const airNeedsRefresh = latestAir?.status !== 'ok' || !freshTimestamp(latestAir.measuredAt) ||
+        latestAir?.alerts?.status !== 'ok' || !freshTimestamp(latestAir.alerts?.checkedAt);
+      if (++ticks % 10 === 0 || airNeedsRefresh ||
+          (latestWeather && !freshTimestamp(latestWeather.observedAt))) refreshEnvironment();
     }, 60000);
   }
   desktop.addEventListener('change', syncEnvironment);
