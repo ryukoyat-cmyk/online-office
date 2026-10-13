@@ -1,15 +1,46 @@
 import unittest
-from datetime import datetime
+from datetime import datetime, timedelta
 from unittest.mock import patch
-from fetch_air_quality import KST, observation, active_alerts, all_alerts
+from fetch_air_quality import KST, REGION_CODE, district_observation, fetch_district_observation, active_alerts, all_alerts, request_page
 
 
 class AirQualityTests(unittest.TestCase):
-    def test_invalid_values_and_instrument_flags(self):
-        value = observation([{'dataTime': '2026-10-10 24:00', 'pm10Value': 'NaN', 'pm25Value': '20', 'pm25Flag': '점검'}])
-        self.assertIsNone(value['pm10'])
-        self.assertIsNone(value['pm25'])
-        self.assertEqual(value['measuredAt'], '2026-10-11T00:00:00+09:00')
+    def setUp(self):
+        self.now = datetime(2026, 10, 14, 8, 30, tzinfo=KST)
+        self.row = {'SGG_CODE': REGION_CODE + '  ', 'ENG_DATA_TIME': '2026-10-14 : 08',
+                    'I10007_VALUE': '57', 'I10007_VALUE_GRADE': 2,
+                    'I10008_VALUE': '37', 'I10008_VALUE_GRADE': 3}
+
+    def test_wansan_record_is_used_instead_of_station_or_city(self):
+        city = {**self.row, 'SGG_CODE': '5211000000', 'I10007_VALUE': '99'}
+        result = district_observation({'list': [city, self.row]}, self.now)
+        self.assertEqual(result, {'measuredAt': '2026-10-14T08:00:00+09:00',
+                                  'pm10': 57, 'pm25': 37})
+        with self.assertRaises(ValueError):
+            district_observation({'list': [city]}, self.now)
+
+    def test_newest_hour_and_midnight(self):
+        old = {**self.row, 'ENG_DATA_TIME': '2026-10-14 : 07', 'I10007_VALUE': '80'}
+        self.assertEqual(district_observation({'list': [self.row, old]}, self.now)['pm10'], 57)
+        midnight = {**self.row, 'ENG_DATA_TIME': '2026-10-13 : 24'}
+        result = district_observation({'list': [midnight]}, datetime(2026, 10, 14, 0, 30, tzinfo=KST))
+        self.assertEqual(result['measuredAt'], '2026-10-14T00:00:00+09:00')
+
+    def test_stale_missing_invalid_and_future_values_are_rejected(self):
+        for update in [{'I10007_VALUE': 'NaN'}, {'I10008_VALUE': '-'},
+                       {'I10007_VALUE_GRADE': 5}, {'ENG_DATA_TIME': '2026-10-14 : 09'},
+                       {'ENG_DATA_TIME': '2026-10-14 : 06'}]:
+            with self.subTest(update=update), self.assertRaises(ValueError):
+                district_observation({'list': [{**self.row, **update}]}, self.now)
+        with self.assertRaises(ValueError):
+            district_observation({'errorCode': 'failed', 'list': [self.row]}, self.now)
+
+    def test_failed_requests_raise_after_last_retry(self):
+        with patch('fetch_air_quality.urlopen', side_effect=OSError('do not expose URL')), patch('fetch_air_quality.time.sleep'):
+            with self.assertRaises(ValueError):
+                fetch_district_observation(self.now)
+            with self.assertRaises(ValueError):
+                request_page('unused', {}, 'unused')
 
     def test_release_region_and_year_boundary(self):
         now = datetime(2026, 1, 1, 8, tzinfo=KST)

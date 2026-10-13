@@ -7,11 +7,13 @@ import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import urlencode, unquote
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
 
 ROOT = Path(__file__).resolve().parents[1]
 KST = timezone(timedelta(hours=9))
-STATION = '삼천동'  # AirKorea: 전주시 완산구 용리로 107, PM10/PM2.5 both available.
+REGION = '전주시 완산구'
+REGION_CODE = '5211100000'
+DISTRICT_URL = 'https://www.airkorea.or.kr/web/mMainSidoAirInfoSubAjax'
 BASE = 'https://apis.data.go.kr/B552584/'
 
 
@@ -29,7 +31,7 @@ def request_page(service, params, key):
             return body
         except Exception:
             # Do not log exception strings: HTTP errors may contain the secret URL.
-            if attempt == 2:
+            if attempt == 1:
                 raise ValueError('AirKorea request failed') from None
             time.sleep(1)
 
@@ -44,18 +46,49 @@ def number(value, flag):
         return None
 
 
-def observation(items):
-    if not items:
-        raise ValueError('No observations')
-    item = max(items, key=lambda row: row.get('dataTime', ''))
-    # AirKorea can label the day's final measurement 24:00.
-    date, clock = item['dataTime'].split()
-    measured = datetime.fromisoformat(date + 'T' + ('00:00' if clock == '24:00' else clock)).replace(tzinfo=KST)
-    if clock == '24:00':
-        measured += timedelta(days=1)
-    return {'measuredAt': measured.isoformat(),
-            'pm10': number(item.get('pm10Value'), item.get('pm10Flag')),
-            'pm25': number(item.get('pm25Value'), item.get('pm25Flag'))}
+def district_observation(raw, now):
+    """Use the official Wansan-gu record, without substituting a station or city."""
+    if raw.get('errorCode') not in (None, '') or not isinstance(raw.get('list'), list):
+        raise ValueError('Invalid district response')
+    rows = [row for row in raw['list']
+            if str(row.get('SGG_CODE', '')).strip() == REGION_CODE]
+    if not rows:
+        raise ValueError('Wansan-gu observation missing')
+    row = max(rows, key=lambda item: item.get('ENG_DATA_TIME', ''))
+    date, hour = row['ENG_DATA_TIME'].split(' : ')
+    hour = int(hour)
+    if not 0 <= hour <= 24:
+        raise ValueError('Invalid observation hour')
+    measured = datetime.fromisoformat(date).replace(tzinfo=KST) + timedelta(hours=hour)
+    age = (now - measured).total_seconds()
+    if not -300 <= age < 7200:
+        raise ValueError('Stale district observation')
+    values = {}
+    for name, code in [('pm10', '10007'), ('pm25', '10008')]:
+        grade = row.get(f'I{code}_VALUE_GRADE')
+        value = number(row.get(f'I{code}_VALUE'), None)
+        if grade not in (1, 2, 3, 4) or value is None:
+            raise ValueError('District measurement unavailable')
+        values[name] = value
+    return {'measuredAt': measured.isoformat(), **values}
+
+
+def fetch_district_observation(now):
+    # This is the same public request used by AirKorea's city/district map.
+    # Both PM values are included in one response, so their observation hour agrees.
+    request = Request(DISTRICT_URL,
+                      data=json.dumps({'itemCode': '10007'}).encode('utf-8'),
+                      headers={'Content-Type': 'application/json;charset=UTF-8',
+                               'Referer': 'https://www.airkorea.or.kr/web/main.do',
+                               'X-Requested-With': 'XMLHttpRequest'})
+    for attempt in range(2):
+        try:
+            with urlopen(request, timeout=10) as response:
+                return district_observation(json.load(response), now)
+        except Exception:
+            if attempt == 1:
+                raise ValueError('AirKorea district request failed') from None
+            time.sleep(1)
 
 
 def active_alerts(items, now):
@@ -99,19 +132,18 @@ def all_alerts(key, year):
 
 def main():
     now = datetime.now(KST)
-    payload = {'status': 'error', 'station': STATION, 'source': '한국환경공단 에어코리아',
+    payload = {'status': 'error', 'region': REGION, 'regionCode': REGION_CODE,
+               'source': '한국환경공단 에어코리아 시군구 대기질',
                'updatedAt': now.isoformat(), 'measuredAt': None, 'pm10': None, 'pm25': None,
-               'alerts': {'status': 'error', 'checkedAt': now.isoformat(), 'active': []}}
+               'alerts': {'status': 'error', 'checkedAt': None, 'active': []}}
     failures = []
     key = os.environ.get('AIRKOREA_API_KEY', '').strip()
+    try:
+        payload.update(fetch_district_observation(now))
+        payload['status'] = 'ok'
+    except Exception as error:
+        failures.append(f'observation: {type(error).__name__}')
     if key:
-        try:
-            body = request_page('ArpltnInforInqireSvc/getMsrstnAcctoRltmMesureDnsty',
-                                {'stationName': STATION, 'dataTerm': 'DAILY', 'ver': '1.3', 'numOfRows': 24, 'pageNo': 1}, key)
-            payload.update(observation(body['items']))
-            payload['status'] = 'ok' if payload['pm10'] is not None and payload['pm25'] is not None else 'error'
-        except Exception as error:
-            failures.append(f'observation: {type(error).__name__}')
         try:
             # Include previous-year records, so a December alert remains active after New Year.
             rows = all_alerts(key, now.year) + all_alerts(key, now.year - 1)

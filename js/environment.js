@@ -42,9 +42,14 @@ function freshTimestamp(value, now = Date.now()) {
   const age = now - ms;
   return Number.isFinite(age) && age >= -300000 && age < 7200000;
 }
+function validAirObservation(data, now = Date.now()) {
+  return data?.regionCode === '5211100000' && data?.status === 'ok' &&
+    airGrade(data.pm10, 'pm10') !== null && airGrade(data.pm25, 'pm25') !== null &&
+    freshTimestamp(data.measuredAt, now);
+}
 function activityState(data, now = Date.now()) {
   const grades = [airGrade(data?.pm10, 'pm10'), airGrade(data?.pm25, 'pm25')];
-  if (data?.status !== 'ok' || grades.includes(null) || !freshTimestamp(data.measuredAt, now) ||
+  if (!validAirObservation(data, now) ||
       !freshTimestamp(data.alerts?.checkedAt, now) || data.alerts.status !== 'ok' ||
       !Array.isArray(data.alerts.active) || !data.alerts.active.every(a =>
         ['주의보', '경보'].includes(a.level) && ['PM10', 'PM25'].includes(a.pollutant))) {
@@ -57,7 +62,7 @@ function activityState(data, now = Date.now()) {
   if (Math.max(...grades) >= 2) return {tone: 'bad', title: '실외 활동 자제', note: '실내 활동 전환 권고 · 민감군 학생 주의'};
   return {tone: 'fair', title: '실외 활동 가능', note: '미세먼지 기준 · 민감군 학생 건강 확인'};
 }
-if (typeof module !== 'undefined') module.exports = {airGrade, freshTimestamp, activityState, timestamp, formatTimestamp, parseLiveWeather};
+if (typeof module !== 'undefined') module.exports = {airGrade, freshTimestamp, activityState, timestamp, formatTimestamp, parseLiveWeather, validAirObservation};
 
 if (typeof document !== 'undefined') {
   const desktop = matchMedia('(min-width: 768px)');
@@ -111,30 +116,22 @@ if (typeof document !== 'undefined') {
   }
   const places = {weather: '', air: ''};
   const times = {weather: null, air: null};
-  function renderStamp() {
-    const out = document.getElementById('envStamp');
-    if (!out) return;
-    // This sits in the air panel: never mix a missing weather date into the air measurement.
-    out.textContent = `${places.air || '측정소 확인 필요'} · ${formatTimestamp(times.air)}${timestamp(times.air) === null ? '' : ' 기준'}`;
-  }
   function renderAir(data) {
     const content = document.getElementById('air-content');
     const grades = [airGrade(data?.pm10, 'pm10'), airGrade(data?.pm25, 'pm25')];
-    const valid = data?.status === 'ok' && !grades.includes(null) && freshTimestamp(data.measuredAt);
+    const valid = validAirObservation(data);
     document.getElementById('airPanel').dataset.tone = valid ? AIR_TONES[Math.max(...grades)] : 'unknown';
     const rows = el('div', 'air-rows', '');
     for (const [index, label, key] of [[0, '미세먼지', 'pm10'], [1, '초미세먼지', 'pm25']]) {
       const row = el('p', 'air-row', '');
-      row.append(el('span', 'air-label', label), el('strong', '', grades[index] === null ? '—' : String(data[key])));
+      row.append(el('span', 'air-label', label), el('strong', '', valid ? String(data[key]) : '—'));
       const badge = el('span', 'grade-badge', valid ? AIR_GRADES[grades[index]] : '갱신 필요');
       badge.dataset.tone = valid ? AIR_TONES[grades[index]] : 'unknown';
       row.append(badge);
       rows.append(row);
     }
     content.replaceChildren(rows);
-    places.air = data?.station || '';
-    times.air = data?.measuredAt || null;
-    renderStamp();
+    content.title = '전주시 완산구 · 에어코리아 시군구 대기질';
     // Quiet unless action is needed: show a chip only for 나쁨 or worse, or an official alert.
     const state = activityState(data);
     const chip = document.getElementById('alertChip');
@@ -186,7 +183,6 @@ if (typeof document !== 'undefined') {
       places.weather = data.location || '전주시';
       times.weather = data.observedAt;
       latestWeather = data;
-      renderStamp();
       content.replaceChildren(...[now, hourlyList(data.hourly), el('p','weather-source',`Open-Meteo · ${formatTimestamp(data.observedAt)} 기준`)].filter(Boolean));
     } catch {
       if (!desktop.matches || (signal.aborted && signal.reason?.name !== 'TimeoutError')) return;
@@ -194,7 +190,6 @@ if (typeof document !== 'undefined') {
       content.replaceChildren(el('p', 'env-note', '날씨 확인 필요 · 최신 정보를 불러오지 못했습니다.'));
       times.weather = null;
       latestWeather = null;
-      renderStamp();
     }
   }
   async function loadAir(signal) {
@@ -227,10 +222,13 @@ if (typeof document !== 'undefined') {
     timer = setInterval(() => {
       // Reevaluate freshness every minute, even when the server JSON is unchanged.
       if (latestAir) renderAir(latestAir);
-      const airNeedsRefresh = latestAir?.status !== 'ok' || !freshTimestamp(latestAir.measuredAt) ||
+      const airNeedsRefresh = !validAirObservation(latestAir) ||
         latestAir?.alerts?.status !== 'ok' || !freshTimestamp(latestAir.alerts?.checkedAt);
-      if (++ticks % 10 === 0 || airNeedsRefresh ||
+      if (++ticks % 10 === 0 ||
           (latestWeather && !freshTimestamp(latestWeather.observedAt))) refreshEnvironment();
+      else if (airNeedsRefresh) {
+        loadAir(AbortSignal.any([controller.signal, AbortSignal.timeout(12000)]));
+      }
     }, 60000);
   }
   desktop.addEventListener('change', syncEnvironment);

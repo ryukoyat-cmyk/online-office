@@ -1,11 +1,11 @@
 const assert = require('node:assert/strict');
-const {airGrade, activityState, freshTimestamp, timestamp, formatTimestamp, parseLiveWeather} = require('../js/environment.js');
+const {airGrade, activityState, freshTimestamp, timestamp, formatTimestamp, parseLiveWeather, validAirObservation} = require('../js/environment.js');
 for (const [key, limits] of [['pm10', [30,80,150]], ['pm25',[15,35,75]]]) {
   limits.forEach((n,i) => {assert.equal(airGrade(n,key),i); assert.equal(airGrade(n+1,key),i+1);});
   for (const value of [null, undefined, -1, NaN, Infinity, '20']) assert.equal(airGrade(value,key),null);
 }
 const now = Date.parse('2026-10-10T09:30:00+09:00');
-const data = {status:'ok',pm10:30,pm25:18,measuredAt:'2026-10-10T09:00:00+09:00',alerts:{status:'ok',checkedAt:'2026-10-10T09:15:00+09:00',active:[]}};
+const data = {status:'ok',regionCode:'5211100000',pm10:30,pm25:18,measuredAt:'2026-10-10T09:00:00+09:00',alerts:{status:'ok',checkedAt:'2026-10-10T09:15:00+09:00',active:[]}};
 assert.equal(activityState(data,now).tone,'fair');
 assert.equal(activityState({...data,pm25:36},now).tone,'bad');
 assert.equal(activityState({...data,pm25:76},now).tone,'bad'); // Very bad is not an official alert.
@@ -29,3 +29,9 @@ assert.equal(parseLiveWeather(raw).hourly.length,0);
 assert.throws(()=>parseLiveWeather({...raw,current:{...raw.current,temperature_2m:null}}));
 assert.throws(()=>parseLiveWeather({...raw,current:{...raw.current,time:'2020-01-01T00:00'}}));
 console.log('Null timestamps and live weather parsing checks passed.');
+
+assert.equal(validAirObservation(data, now), true);
+assert.equal(validAirObservation({...data, regionCode:'5211300000'}, now), false);
+assert.equal(validAirObservation({...data, regionCode:undefined}, now), false);
+assert.equal(activityState({...data, regionCode:'5211300000'}, now).tone, 'unknown');
+console.log('Wansan-gu scope checks passed.');
