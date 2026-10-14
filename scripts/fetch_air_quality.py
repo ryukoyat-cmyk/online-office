@@ -15,6 +15,8 @@ REGION = '전주시 완산구'
 REGION_CODE = '5211100000'
 DISTRICT_URL = 'https://www.airkorea.or.kr/web/mMainSidoAirInfoSubAjax'
 BASE = 'https://apis.data.go.kr/B552584/'
+PUBLISHED_AIR_URL = 'https://ryukoyat-cmyk.github.io/online-office/data/air-quality.json'
+MAX_RECORD_AGE = 24 * 60 * 60
 
 
 def request_page(service, params, key):
@@ -67,9 +69,9 @@ def district_observation(raw, now):
     for name, code in [('pm10', '10007'), ('pm25', '10008')]:
         grade = row.get(f'I{code}_VALUE_GRADE')
         value = number(row.get(f'I{code}_VALUE'), None)
-        if grade not in (1, 2, 3, 4) or value is None:
-            raise ValueError('District measurement unavailable')
-        values[name] = value
+        values[name] = value if grade in (1, 2, 3, 4) else None
+    if all(value is None for value in values.values()):
+        raise ValueError('District measurements unavailable')
     return {'measuredAt': measured.isoformat(), **values}
 
 
@@ -130,6 +132,37 @@ def all_alerts(key, year):
     raise ValueError('Alert pagination limit')
 
 
+def usable_record(data, now):
+    """Keep a real, dated Wansan-gu observation for at most one day."""
+    try:
+        measured = datetime.fromisoformat(data['measuredAt'])
+        age = (now - measured).total_seconds()
+        return (data.get('regionCode') == REGION_CODE and measured.utcoffset() is not None
+                and -300 <= age < MAX_RECORD_AGE
+                and any(number(data.get(key), None) is not None for key in ('pm10', 'pm25')))
+    except (KeyError, TypeError, ValueError):
+        return False
+
+
+def previous_observation(now):
+    destination = ROOT / 'data/air-quality.json'
+    candidates = []
+    try:
+        candidates.append(json.loads(destination.read_text(encoding='utf-8')))
+    except (OSError, ValueError):
+        pass
+    try:
+        # Each Actions checkout starts with the empty seed JSON. The last Pages
+        # deployment is the durable source of the previous successful observation.
+        url = PUBLISHED_AIR_URL + '?t=' + str(int(now.timestamp()))
+        with urlopen(Request(url, headers={'Cache-Control': 'no-cache'}), timeout=5) as response:
+            candidates.append(json.load(response))
+    except Exception:
+        pass
+    records = [data for data in candidates if isinstance(data, dict) and usable_record(data, now)]
+    return max(records, key=lambda data: datetime.fromisoformat(data['measuredAt'])) if records else None
+
+
 def main():
     now = datetime.now(KST)
     payload = {'status': 'error', 'region': REGION, 'regionCode': REGION_CODE,
@@ -140,9 +173,15 @@ def main():
     key = os.environ.get('AIRKOREA_API_KEY', '').strip()
     try:
         payload.update(fetch_district_observation(now))
-        payload['status'] = 'ok'
+        payload['status'] = 'ok' if all(payload[key] is not None for key in ('pm10', 'pm25')) else 'partial'
+        payload['lastSuccessAt'] = now.isoformat()
     except Exception as error:
         failures.append(f'observation: {type(error).__name__}')
+        previous = previous_observation(now)
+        if previous:
+            payload.update({key: previous.get(key) for key in ('measuredAt', 'pm10', 'pm25')})
+            payload['status'] = 'cached'
+            payload['lastSuccessAt'] = previous.get('lastSuccessAt') or previous.get('updatedAt')
     if key:
         try:
             # Include previous-year records, so a December alert remains active after New Year.
@@ -156,7 +195,7 @@ def main():
     temporary = destination.with_suffix('.tmp')
     temporary.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     temporary.replace(destination)
-    success = payload['status'] == 'ok' and payload['alerts']['status'] == 'ok'
+    success = payload['status'] in ('ok', 'partial') and payload['alerts']['status'] == 'ok'
     print('Air quality update: ' + ('ok' if success else 'error; ' + '; '.join(failures or ['incomplete response'])))
     return 0 if success else 1
 

@@ -4,7 +4,7 @@ on:
     branches: [main]
   schedule:
     # Avoid the busy start of the hour; extra opportunities mitigate scheduler delays.
-    - cron: '7,27,47 * * * *'
+    - cron: '12,32,52 * * * *'
   workflow_dispatch:
 permissions:
   contents: read
@@ -35,6 +35,7 @@ jobs:
         continue-on-error: true
         run: python scripts/fetch_weather.py
       - name: Fetch AirKorea observations and official alerts
+        timeout-minutes: 3
         id: air
         continue-on-error: true
         env:
@@ -75,5 +76,5 @@ jobs:
       - name: Report air quality update failure
         if: always() && steps.deployment.outcome == 'success' && steps.air.outcome == 'failure'
         run: |
-          echo '::error::AirKorea update failed. Pages displays a verification-needed state. Check AIRKOREA_API_KEY and permissions for observations and alerts.'
+          echo '::error::AirKorea update failed. Pages retains the last dated Wansan-gu observation when available. Check AIRKOREA_API_KEY and permissions for observations and alerts.'
           exit 1

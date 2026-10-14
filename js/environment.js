@@ -42,33 +42,62 @@ function freshTimestamp(value, now = Date.now()) {
   const age = now - ms;
   return Number.isFinite(age) && age >= -300000 && age < 7200000;
 }
+const AIR_CACHE_KEY = 'office-air-wansan-v1';
+function hasAirRecord(data, now = Date.now()) {
+  const measured = timestamp(data?.measuredAt);
+  return data?.regionCode === '5211100000' && ['ok','partial','cached'].includes(data?.status) &&
+    measured !== null && now - measured >= -300000 && now - measured < 86400000 &&
+    [airGrade(data.pm10, 'pm10'), airGrade(data.pm25, 'pm25')].some(grade => grade !== null);
+}
 function validAirObservation(data, now = Date.now()) {
-  return data?.regionCode === '5211100000' && data?.status === 'ok' &&
-    airGrade(data.pm10, 'pm10') !== null && airGrade(data.pm25, 'pm25') !== null &&
-    freshTimestamp(data.measuredAt, now);
+  return hasAirRecord(data, now) && freshTimestamp(data.measuredAt, now) &&
+    airGrade(data.pm10, 'pm10') !== null && airGrade(data.pm25, 'pm25') !== null;
+}
+function preferAirRecord(current, incoming, now = Date.now()) {
+  if (!hasAirRecord(incoming, now)) return hasAirRecord(current, now) ? current : incoming;
+  if (hasAirRecord(current, now) && timestamp(current.measuredAt) > timestamp(incoming.measuredAt)) return current;
+  return incoming;
+}
+function airRows(data, now = Date.now()) {
+  const record = hasAirRecord(data, now);
+  const fresh = record && freshTimestamp(data.measuredAt, now);
+  return [['미세먼지','pm10'], ['초미세먼지','pm25']].map(([label, key]) => {
+    const grade = record ? airGrade(data[key], key) : null;
+    return {label, key, value:grade === null ? null : data[key],
+      grade:fresh ? grade : null, tone:fresh && grade !== null ? AIR_TONES[grade] : 'unknown'};
+  });
 }
 function activityState(data, now = Date.now()) {
-  const grades = [airGrade(data?.pm10, 'pm10'), airGrade(data?.pm25, 'pm25')];
-  if (!validAirObservation(data, now) ||
-      !freshTimestamp(data.alerts?.checkedAt, now) || data.alerts.status !== 'ok' ||
-      !Array.isArray(data.alerts.active) || !data.alerts.active.every(a =>
-        ['주의보', '경보'].includes(a.level) && ['PM10', 'PM25'].includes(a.pollutant))) {
-    return {tone: 'unknown', title: '판단 확인 필요', note: '최신 관측·경보 정보를 확인하세요.'};
+  const alerts = data?.alerts;
+  const knownAlerts = alerts?.status === 'ok' && freshTimestamp(alerts.checkedAt, now) &&
+    Array.isArray(alerts.active) && alerts.active.every(a =>
+      ['주의보', '경보'].includes(a.level) && ['PM10', 'PM25'].includes(a.pollutant));
+  if (knownAlerts && alerts.active.length) {
+    const level = alerts.active.some(a => a.level === '경보') ? '경보' : '주의보';
+    return {tone:'very-bad', title:'실외수업 금지 안내', note:`전북 중부권 ${level} 발령 · 실내 활동 전환`};
   }
-  if (data.alerts.active.length) {
-    const level = data.alerts.active.some(a => a.level === '경보') ? '경보' : '주의보';
-    return {tone: 'very-bad', title: '실외수업 금지 안내', note: `전북 중부권 ${level} 발령 · 실내 활동 전환`};
+  const grades = airRows(data, now).map(row => row.grade);
+  if (grades.some(grade => grade !== null && grade >= 2)) {
+    return {tone:'bad', title:'실외 활동 자제', note:'실내 활동 전환 권고 · 민감군 학생 주의'};
   }
-  if (Math.max(...grades) >= 2) return {tone: 'bad', title: '실외 활동 자제', note: '실내 활동 전환 권고 · 민감군 학생 주의'};
-  return {tone: 'fair', title: '실외 활동 가능', note: '미세먼지 기준 · 민감군 학생 건강 확인'};
+  if (knownAlerts && validAirObservation(data, now)) {
+    return {tone:'fair', title:'실외 활동 가능', note:'미세먼지 기준 · 민감군 학생 건강 확인'};
+  }
+  return {tone:'unknown', title:'', note:''};
 }
-if (typeof module !== 'undefined') module.exports = {airGrade, freshTimestamp, activityState, timestamp, formatTimestamp, parseLiveWeather, validAirObservation};
+if (typeof module !== 'undefined') module.exports = {
+  airGrade, freshTimestamp, activityState, timestamp, formatTimestamp, parseLiveWeather,
+  validAirObservation, hasAirRecord, preferAirRecord, airRows
+};
 
 if (typeof document !== 'undefined') {
   const desktop = matchMedia('(min-width: 768px)');
   let timer = null;
   let controller = null;
   let latestAir = null;
+  let airFailures = 0;
+  let nextAirFetchAt = 0;
+  let airInFlight = false;
   let latestWeather = null;
   const el = (tag, cls, text) => {
     const node = document.createElement(tag);
@@ -118,33 +147,33 @@ if (typeof document !== 'undefined') {
   const times = {weather: null, air: null};
   function renderAir(data) {
     const content = document.getElementById('air-content');
-    const grades = [airGrade(data?.pm10, 'pm10'), airGrade(data?.pm25, 'pm25')];
-    const valid = validAirObservation(data);
-    document.getElementById('airPanel').dataset.tone = valid ? AIR_TONES[Math.max(...grades)] : 'unknown';
+    const values = airRows(data);
+    const tones = values.map(row => row.grade).filter(grade => grade !== null);
+    document.getElementById('airPanel').dataset.tone = tones.length ? AIR_TONES[Math.max(...tones)] : 'unknown';
     const rows = el('div', 'air-rows', '');
-    for (const [index, label, key] of [[0, '미세먼지', 'pm10'], [1, '초미세먼지', 'pm25']]) {
+    for (const info of values) {
       const row = el('p', 'air-row', '');
-      row.append(el('span', 'air-label', label), el('strong', '', valid ? String(data[key]) : '—'));
-      const badge = el('span', 'grade-badge', valid ? AIR_GRADES[grades[index]] : '갱신 필요');
-      badge.dataset.tone = valid ? AIR_TONES[grades[index]] : 'unknown';
-      row.append(badge);
+      row.append(el('span', 'air-label', info.label), el('strong', '', info.value === null ? '—' : String(info.value)));
+      if (info.grade !== null) {
+        const badge = el('span', 'grade-badge', AIR_GRADES[info.grade]);
+        badge.dataset.tone = info.tone;
+        row.append(badge);
+      }
       rows.append(row);
     }
     content.replaceChildren(rows);
-    content.title = '전주시 완산구 · 에어코리아 시군구 대기질';
-    // Quiet unless action is needed: show a chip only for 나쁨 or worse, or an official alert.
+    const record = hasAirRecord(data);
+    content.title = record ? `전주시 완산구 · 에어코리아 · ${formatTimestamp(data.measuredAt)} 관측` :
+      '전주시 완산구 · 에어코리아';
+    if (record && !freshTimestamp(data.measuredAt)) {
+      content.append(el('span', 'air-record-note', '최근 관측값'));
+    }
     const state = activityState(data);
     const chip = document.getElementById('alertChip');
-    chip.hidden = state.tone === 'fair';
+    chip.hidden = !['bad', 'very-bad'].includes(state.tone);
     chip.dataset.tone = state.tone;
-    chip.textContent = state.tone === 'unknown' ? '최신 관측·경보 확인 필요' : state.title;
-    chip.title = state.note;
-    if (state.tone === 'unknown') {
-      const link = el('a', 'air-check-link', '에어코리아 확인 ↗');
-      link.href = 'https://www.airkorea.or.kr/web/main.do';
-      link.target = '_blank'; link.rel = 'noopener noreferrer';
-      content.append(link);
-    }
+    chip.textContent = chip.hidden ? '' : state.title;
+    chip.title = chip.hidden ? '' : state.note;
   }
   async function fetchData(url, signal) {
     const response = await fetch(`${url}?t=${Date.now()}`, {cache: 'no-store', signal});
@@ -193,15 +222,29 @@ if (typeof document !== 'undefined') {
     }
   }
   async function loadAir(signal) {
+    if (airInFlight) return;
+    airInFlight = true;
     try {
-      const data = await fetchData(CONFIG.airQualityUrl, signal);
+      // Revalidate the stable URL with ETag support instead of creating a new cache key on every retry.
+      const response = await fetch(CONFIG.airQualityUrl, {cache:'no-cache', signal});
+      if (!response.ok) throw new Error('air unavailable');
+      const data = await response.json();
       if (signal.aborted || !desktop.matches) return;
-      latestAir = data;
-      renderAir(data);
+      latestAir = preferAirRecord(latestAir, data);
+      if (hasAirRecord(latestAir)) {
+        try { localStorage.setItem(AIR_CACHE_KEY, JSON.stringify(latestAir)); } catch {}
+      }
+      const current = hasAirRecord(data) && freshTimestamp(data.measuredAt);
+      airFailures = current ? 0 : airFailures + 1;
+      nextAirFetchAt = Date.now() + (current ? 600000 : Math.min(600000, 60000 * 2 ** Math.min(airFailures - 1, 4)));
+      renderAir(latestAir);
     } catch {
       if (!desktop.matches || (signal.aborted && signal.reason?.name !== 'TimeoutError')) return;
-      latestAir = {...latestAir, status: 'error'};
+      airFailures += 1;
+      nextAirFetchAt = Date.now() + Math.min(600000, 60000 * 2 ** Math.min(airFailures - 1, 4));
       renderAir(latestAir);
+    } finally {
+      airInFlight = false;
     }
   }
   function refreshEnvironment() {
@@ -217,16 +260,19 @@ if (typeof document !== 'undefined') {
     timer = null;
     controller?.abort();
     if (!desktop.matches || document.hidden) return;
+    try {
+      const cached = JSON.parse(localStorage.getItem(AIR_CACHE_KEY));
+      latestAir = preferAirRecord(latestAir, cached);
+      if (hasAirRecord(latestAir)) renderAir(latestAir);
+    } catch {}
     refreshEnvironment();
     let ticks = 0;
     timer = setInterval(() => {
       // Reevaluate freshness every minute, even when the server JSON is unchanged.
       if (latestAir) renderAir(latestAir);
-      const airNeedsRefresh = !validAirObservation(latestAir) ||
-        latestAir?.alerts?.status !== 'ok' || !freshTimestamp(latestAir.alerts?.checkedAt);
       if (++ticks % 10 === 0 ||
           (latestWeather && !freshTimestamp(latestWeather.observedAt))) refreshEnvironment();
-      else if (airNeedsRefresh) {
+      else if (Date.now() >= nextAirFetchAt) {
         loadAir(AbortSignal.any([controller.signal, AbortSignal.timeout(12000)]));
       }
     }, 60000);

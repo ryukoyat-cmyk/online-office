@@ -1,5 +1,5 @@
 const assert = require('node:assert/strict');
-const {airGrade, activityState, freshTimestamp, timestamp, formatTimestamp, parseLiveWeather, validAirObservation} = require('../js/environment.js');
+const {airGrade, activityState, freshTimestamp, timestamp, formatTimestamp, parseLiveWeather, validAirObservation, hasAirRecord, preferAirRecord, airRows} = require('../js/environment.js');
 for (const [key, limits] of [['pm10', [30,80,150]], ['pm25',[15,35,75]]]) {
   limits.forEach((n,i) => {assert.equal(airGrade(n,key),i); assert.equal(airGrade(n+1,key),i+1);});
   for (const value of [null, undefined, -1, NaN, Infinity, '20']) assert.equal(airGrade(value,key),null);
@@ -35,3 +35,18 @@ assert.equal(validAirObservation({...data, regionCode:'5211300000'}, now), false
 assert.equal(validAirObservation({...data, regionCode:undefined}, now), false);
 assert.equal(activityState({...data, regionCode:'5211300000'}, now).tone, 'unknown');
 console.log('Wansan-gu scope checks passed.');
+
+const later = now + 4 * 3600000;
+assert.equal(hasAirRecord(data, later), true);
+assert.equal(validAirObservation(data, later), false);
+assert.equal(airRows(data, later)[0].value, 30);
+assert.equal(airRows(data, later)[0].grade, null);
+assert.equal(airRows(data, now + 24 * 3600000)[0].value, null);
+assert.equal(airRows({...data, pm25:null}, now)[0].value, 30);
+assert.equal(airRows({...data, pm25:null}, now)[1].value, null);
+assert.equal(preferAirRecord(data, {status:'error'}, now), data);
+assert.equal(preferAirRecord(data, {...data, measuredAt:'2026-10-10T08:00:00+09:00'}, now), data);
+assert.equal(preferAirRecord(data, {...data, pm10:35, measuredAt:'2026-10-10T09:25:00+09:00'}, now).pm10, 35);
+assert.equal(activityState({...data, pm25:40, alerts:{status:'error'}}, now).tone, 'bad');
+assert.equal(activityState({...data, alerts:{status:'error'}}, now).title, '');
+console.log('Retained, partial, failed and out-of-order observation checks passed.');
