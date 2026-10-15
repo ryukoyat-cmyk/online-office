@@ -60,11 +60,10 @@ function preferAirRecord(current, incoming, now = Date.now()) {
 }
 function airRows(data, now = Date.now()) {
   const record = hasAirRecord(data, now);
-  const fresh = record && freshTimestamp(data.measuredAt, now);
   return [['미세먼지','pm10'], ['초미세먼지','pm25']].map(([label, key]) => {
     const grade = record ? airGrade(data[key], key) : null;
     return {label, key, value:grade === null ? null : data[key],
-      grade:fresh ? grade : null, tone:fresh && grade !== null ? AIR_TONES[grade] : 'unknown'};
+      grade, tone:grade !== null ? AIR_TONES[grade] : 'unknown'};
   });
 }
 function activityState(data, now = Date.now()) {
@@ -76,7 +75,8 @@ function activityState(data, now = Date.now()) {
     const level = alerts.active.some(a => a.level === '경보') ? '경보' : '주의보';
     return {tone:'very-bad', title:'실외수업 금지 안내', note:`전북 중부권 ${level} 발령 · 실내 활동 전환`};
   }
-  const grades = airRows(data, now).map(row => row.grade);
+  const grades = hasAirRecord(data, now) && freshTimestamp(data.measuredAt, now) ?
+    airRows(data, now).map(row => row.grade) : [];
   if (grades.some(grade => grade !== null && grade >= 2)) {
     return {tone:'bad', title:'실외 활동 자제', note:'실내 활동 전환 권고 · 민감군 학생 주의'};
   }
@@ -165,9 +165,6 @@ if (typeof document !== 'undefined') {
     const record = hasAirRecord(data);
     content.title = record ? `전주시 완산구 · 에어코리아 · ${formatTimestamp(data.measuredAt)} 관측` :
       '전주시 완산구 · 에어코리아';
-    if (record && !freshTimestamp(data.measuredAt)) {
-      content.append(el('span', 'air-record-note', '최근 관측값'));
-    }
     const state = activityState(data);
     const chip = document.getElementById('alertChip');
     chip.hidden = !['bad', 'very-bad'].includes(state.tone);
