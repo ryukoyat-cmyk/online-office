@@ -14,6 +14,9 @@ ADDRESS = '전북특별자치도 전주시 완산구 대동로 33'
 LOCATION_LABEL = '전주시 완산구'
 # Fallback center of Jeonju, used if the address lookup below fails for any reason.
 FALLBACK_LATITUDE, FALLBACK_LONGITUDE = 35.8242, 127.1480
+GEOCODING_TIMEOUT_SECONDS = 4
+FORECAST_TIMEOUT_SECONDS = 20
+FORECAST_ATTEMPTS = 2
 
 # WMO weather codes -> (Korean label, icon category)
 WEATHER_CODES = {
@@ -41,7 +44,8 @@ def geocode_address(address):
         'https://nominatim.openstreetmap.org/search?' + urlencode(params),
         headers={'User-Agent': 'jeonju-elementary-online-office/1.0 (school portal weather widget)'},
     )
-    with urlopen(request, timeout=15) as response:
+    # Geocoding is optional: keep the fallback usable when Nominatim is slow.
+    with urlopen(request, timeout=GEOCODING_TIMEOUT_SECONDS) as response:
         results = json.load(response)
     if not results:
         return None
@@ -112,16 +116,16 @@ def main():
     }
     payload = {'location': LOCATION_LABEL, 'latitude': latitude, 'longitude': longitude,
                'date': date, 'updatedAt': now.isoformat(), 'status': 'error'}
-    for attempt in range(3):
+    for attempt in range(FORECAST_ATTEMPTS):
         try:
-            with urlopen('https://api.open-meteo.com/v1/forecast?' + urlencode(params), timeout=25) as response:
+            with urlopen('https://api.open-meteo.com/v1/forecast?' + urlencode(params), timeout=FORECAST_TIMEOUT_SECONDS) as response:
                 raw = json.load(response)
             payload.update(parse_response(raw))
             payload['status'] = 'ok'
             break
         except Exception:
-            if attempt < 2:
-                time.sleep(2 ** attempt)
+            if attempt + 1 < FORECAST_ATTEMPTS:
+                time.sleep(1)
     path = ROOT / 'data' / 'weather.json'
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix('.tmp')
